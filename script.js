@@ -1,87 +1,107 @@
-d3.csv("cmip6_fco2antt.csv").then(data => {
-    data.forEach(d => {
-        d.year = +d.year;
-        d.lat = +d.lat;
-        d.lon = +d.lon;
-        d.co2 = +d.fco2antt;
-    });
+// Setup canvas and projection
+const canvas = document.getElementById("globe");
+const context = canvas.getContext("2d");
+const width = window.innerWidth;
+const height = window.innerHeight;
+canvas.width = width;
+canvas.height = height;
 
-    startVisualization(data);
+const projection = d3.geoOrthographic()
+  .scale(height / 2.2)
+  .translate([width / 2, height / 2])
+  .clipAngle(90)
+  .rotate([-80, -10]);
+
+const path = d3.geoPath().projection(projection).context(context);
+
+let countries, plotData = [];
+
+// Draw function
+function draw() {
+  context.clearRect(0, 0, width, height);
+
+  // Draw countries
+  if (countries) {
+    context.fillStyle = "#aadaff";
+    context.strokeStyle = "#000";
+    countries.features.forEach(f => {
+      context.beginPath();
+      path(f);
+      context.fill();
+      context.stroke();
+    });
+  }
+
+  // Draw CO₂ points
+  if (plotData.length) {
+    plotData.forEach(d => {
+      const [x, y] = projection([d.lon, d.lat]);
+      if (x != null && y != null) {
+        context.fillStyle = colorScale(d.co2);
+        context.fillRect(x, y, 2, 2);
+      }
+    });
+  }
+}
+const CO2_MIN = 0.0;
+const CO2_MID = 3.01215e-08;
+const CO2_MAX = 6.0243e-08;
+
+const colorScale = d3.scaleLinear()
+    .domain([CO2_MIN, CO2_MID, CO2_MAX])
+    .range(["green", "yellow", "red"]);
+
+function updateYear(csvFile) {
+  d3.csv(csvFile).then(data => {
+    const yearData = data.map(d => ({
+      lat: +d.lat,
+      lon: +d.lon,
+      co2: +d.fco2antt
+    }));
+
+    // Bin points
+    const binnedData = d3.rollup(
+      yearData,
+      v => d3.mean(v, d => d.co2),
+      d => Math.round(d.lat),
+      d => Math.round(d.lon)
+    );
+
+    plotData = [];
+    binnedData.forEach((lons, lat) => {
+      lons.forEach((co2, lon) => {
+        plotData.push({ lat: +lat, lon: +lon, co2 });
+      });
+    });
+    d3.select("#info").text(`Year: ${csvFile}, Min: ${CO2_MIN}, Max: ${CO2_MAX}`);
+
+    draw(); // redraw globe
+  });
+}
+
+
+
+// Load TopoJSON countries and setup initial visualization
+d3.json("data/countries.json").then(world => {
+  countries = topojson.feature(world, world.objects.countries);
+
+  // Draw empty globe first
+  draw();
+
+  // Load initial year (first step)
+  const firstStep = document.querySelector(".step");
+  if (firstStep) {
+    const initialCsv = firstStep.dataset.file;
+    updateYear(initialCsv);
+  }
+
+  // Setup Scrollama
+  const scroller = scrollama();
+  scroller.setup({ step: ".step" })
+    .onStepEnter(response => {
+      const csvFile = response.element.dataset.file;
+      updateYear(csvFile);
+    });
 });
 
-function startVisualization(data) {
-    mapboxgl.accessToken = "pk.eyJ1IjoiZXJ0b25nMjEiLCJhIjoiY21ocXJkeTFkMTFlczJsb2hmczMwZHZlZiJ9.qwOHyZ8MSG4kaN68ifsoaw";
 
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        center: [0, 0],
-        zoom: 1.4,
-        pitch: 60,
-        antialias: true
-    });
-
-    map.on("load", () => {
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.2 });
-        map.addSource("mapbox-dem", {
-            type: "raster-dem",
-            url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-            tileSize: 512,
-        });
-
-        // Draw first year
-        updateYear(map, data, 1850);  
-    });
-}
-
-function updateYear(map, data, year) {
-    const yearData = data.filter(d => d.year === year);
-
-    const geojson = {
-        type: "FeatureCollection",
-        features: yearData.map(d => ({
-            type: "Feature",
-            geometry: {
-                type: "Point",
-                coordinates: [d.lon, d.lat]
-            },
-            properties: {
-                co2: d.co2
-            }
-        }))
-    };
-
-    if (map.getSource("co2")) {
-        map.getSource("co2").setData(geojson);
-    } else {
-        map.addSource("co2", { type: "geojson", data: geojson });
-
-        map.addLayer({
-            id: "co2-circles",
-            type: "circle",
-            source: "co2",
-            paint: {
-                "circle-radius": 3,
-                "circle-color": [
-                    "interpolate",
-                    ["linear"],
-                    ["get", "co2"],
-                    300, "green",
-                    420, "yellow",
-                    500, "red"
-                ],
-                "circle-opacity": 0.6
-            }
-        });
-    }
-}
-
-const steps = document.querySelectorAll(".step");
-
-scrollama()
-  .setup({ step: ".step" })
-  .onStepEnter(response => {
-      const year = +response.element.dataset.year;
-      updateYear(map, data, year);
-      rotateMap(map, year);
-  });

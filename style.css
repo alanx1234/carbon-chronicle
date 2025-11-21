@@ -1,0 +1,34 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: auto;   /* allow page height to expand */
+  font-family: sans-serif;
+}
+
+
+/* Make the globe a full-screen background */
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: fixed;  /* stay fixed while scrolling */
+  top: 0;
+  left: 0;
+  z-index: -1;      /* behind everything else */
+}
+
+.scroll-container {
+  position: relative;
+  width: 100%;
+  height: 400vh;  /* tall enough to scroll */
+}
+
+.step {
+  margin: 400px auto; /* bigger vertical spacing */
+  padding: 40px;
+  width: 200px;
+  background: rgba(255,255,255,0.8);
+  text-align: center;
+  font-size: 1.2rem;
+}

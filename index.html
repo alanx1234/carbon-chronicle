@@ -4,13 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Final Project</title>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/topojson-client@3"></script>
+    <script src="https://unpkg.com/scrollama"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id = "3Dmap"></div>
+    <canvas id="globe"></canvas>
+    <div id="info" style="position:fixed; top:10px; left:10px; background:white; padding:5px; z-index:10;"></div>
+    <div class="scroll-container">
+    <div class="step" data-file="data/1850_co.csv"></div>
+    <div class="step" data-file="data/1869_co.csv"></div>
+    <div class="step" data-file="data/1889_co.csv"></div>
+    <div class="step" data-file="data/1899_co.csv"></div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
