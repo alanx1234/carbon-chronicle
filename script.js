@@ -1,25 +1,37 @@
 // Setup canvas and projection
 const canvas = document.getElementById("globe");
 const context = canvas.getContext("2d");
-const width = window.innerWidth;
-const height = window.innerHeight;
-canvas.width = width;
-canvas.height = height;
+const container = document.querySelector(".left-panel");
 
-const projection = d3.geoOrthographic()
-  .scale(height / 2.2)
-  .translate([width / 2, height / 2])
+let projection = d3.geoOrthographic()
   .clipAngle(90)
   .rotate([-80, -10]);
 
-
-const path = d3.geoPath().projection(projection).context(context);
+let path = d3.geoPath().projection(projection).context(context);
 
 let countries, plotData = [];
 
+// Resize canvas based on .left-panel
+function resizeCanvas() {
+  const rect = container.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
+
+  canvas.width = width;
+  canvas.height = height;
+
+  projection
+    .scale(Math.min(width, height) / 2.2)
+    .translate([width / 2, height / 2]);
+
+  path = d3.geoPath().projection(projection).context(context);
+
+  draw();
+}
+
 // Draw function
 function draw() {
-  context.clearRect(0, 0, width, height);
+  context.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw CO₂ points
   if (plotData.length) {
@@ -27,12 +39,12 @@ function draw() {
       const [x, y] = projection([d.lon, d.lat]);
       if (x != null && y != null) {
         context.fillStyle = colorScale(d.co2);
-        context.fillRect(x, y, 6, 6);
+        context.fillRect(x - 3, y - 3, 6, 6);
       }
     });
   }
 
-    // Draw countries
+  // Draw countries
   if (countries) {
     context.fillStyle = "#ffffff04";
     context.strokeStyle = "#000";
@@ -43,8 +55,11 @@ function draw() {
       context.stroke();
     });
   }
-  
 }
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
 const CO2_MIN = 0.0;
 const CO2_MID = 3.01215e-08;
 const CO2_MAX = 6.0243e-08;
@@ -99,38 +114,57 @@ d3.json("data/countries.json").then(world => {
 
   // Setup Scrollama
   const scroller = scrollama();
-  scroller.setup({ step: ".step" })
-    .onStepEnter(response => {
-      const csvFile = response.element.dataset.file;
-      updateYear(csvFile);
-    });
+  scroller
+  .setup({ step: ".step" })
+  .onStepEnter(async ({ element }) => {
+    const file = element.dataset.file;
+
+    updateYear(file);   // ✅ update the map
+
+    const block = element.closest(".step-block");
+    const chartDiv = block.querySelector(".chart");
+
+    const data = await d3.csv(file);
+    drawChart(chartDiv, data); // draw the chart for this year
 });
 
-// Fade in the globe when the #scrolly section enters viewport
-const scrollyObserver = new IntersectionObserver((entries) => {
+
+});
+
+const intro = document.querySelector(".intro");
+const scrolly = document.getElementById("scrolly");
+
+const transitionObserver = new IntersectionObserver(entries => {
   entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      canvas.classList.add("visible");
+    if (!entry.isIntersecting) { // when intro is scrolled past
+      scrolly.classList.add("visible");  // fade in scrolly
+      intro.classList.add("slide-up");   // fade/slide out intro
+    } else {
+      scrolly.classList.remove("visible");
+      intro.classList.remove("slide-up");
     }
   });
-}, { threshold: 0.1 });
+}, { threshold: 0 });
 
-scrollyObserver.observe(document.getElementById("scrolly"));
+transitionObserver.observe(intro);
 
-window.addEventListener("resize", () => {
-  // Update canvas size
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  canvas.width = width;
-  canvas.height = height;
 
-  const radius = Math.min(width, height) / 2.2;
 
-  // Update projection
-  projection
-    .scale(radius)
-    .translate([width / 2, height / 2]);
 
-  draw();  // redraw globe with new size
-});
+// window.addEventListener("resize", () => {
+//   // Update canvas size
+//   const width = container.innerWidth;
+//   const height = container.innerHeight;
+//   canvas.width = width;
+//   canvas.height = height;
+
+//   const radius = Math.min(width, height) / 2.2;
+
+//   // Update projection
+//   projection
+//     .scale(radius)
+//     .translate([width / 2, height / 2]);
+
+//   draw();  // redraw globe with new size
+// });
 

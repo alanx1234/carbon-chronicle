@@ -22,17 +22,63 @@
         with record high temperatures.
     </p>
     </div>
-    <section id = "scrolly">
-    <canvas id="globe"></canvas>
-    <div id="info" style="position:fixed; top:10px; left:10px; background:white; padding:5px; z-index:10;"></div>
-    <div class="scroll-container">
-    <div class="step" data-file="data/1850_co.csv"></div>
-    <div class="step" data-file="data/1869_co.csv"></div>
-    <div class="step" data-file="data/1889_co.csv"></div>
-    <div class="step" data-file="data/1899_co.csv"></div>
-    <div class="step" data-file="data/2014_co.csv"></div>
+<section id="scrolly">
+  <div class="left-panel">
+      <canvas id="globe"></canvas>
+  </div>
+
+  <!-- You can put steps ANYWHERE below (center, right, stacked, etc.) -->
+  <div class="content-area">
+
+      <!-- Example: Steps centered -->
+      <div class="scroll-container">
+
+    <div class="step-block">
+        <div class="step" data-file="data/1850_co.csv">Year 1850</div>
+        <div class="chart" id="chart-1850"></div>
+        <div class="textbox">
+            <p>Text for 1850...</p>
+        </div>
     </div>
-    </section>
+
+    <div class="step-block">
+        <div class="step" data-file="data/1869_co.csv">Year 1869</div>
+        <div class="chart" id="chart-1869"></div>
+        <div class="textbox">
+            <p>Text for 1869...</p>
+        </div>
+    </div>
+
+    <div class="step-block">
+        <div class="step" data-file="data/1889_co.csv">Year 1889</div>
+        <div class="chart" id="chart-1889"></div>
+        <div class="textbox">
+            <p>Text for 1889...</p>
+        </div>
+    </div>
+
+    <div class="step-block">
+        <div class="step" data-file="data/1899_co.csv">Year 1899</div>
+        <div class="chart" id="chart-1899"></div>
+        <div class="textbox">
+            <p>Text for 1899...</p>
+        </div>
+    </div>
+
+    <div class="step-block">
+        <div class="step" data-file="data/2014_co.csv">Year 2014</div>
+        <div class="chart" id="chart-2014"></div>
+        <div class="textbox">
+            <p>Text for 2014...</p>
+        </div>
+    </div>
+
+</div>
+
+
+  </div>
+</section>
+
     <script src="script.js"></script>
 </body>
 </html>
