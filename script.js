@@ -96,6 +96,70 @@ function updateYear(csvFile) {
   });
 }
 
+function drawRegionChart(regionName, chartDiv, data, eventYear) {
+  chartDiv.innerHTML = ""; // clear previous chart
+
+  const parsedData = data.map(d => ({
+    time: +d.time, // numeric year
+    date: new Date(+d.time, 0, 1),
+    value: +d[regionName]
+  }));
+
+  const margin = { top: 20, right: 30, bottom: 30, left: 50 };
+  const width = chartDiv.clientWidth - margin.left - margin.right;
+  const height = chartDiv.clientHeight - margin.top - margin.bottom;
+
+  const svg = d3.select(chartDiv)
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3.scaleTime()
+    .domain(d3.extent(parsedData, d => d.date))
+    .range([0, width]);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(parsedData, d => d.value)])
+    .range([height, 0]);
+
+  const yAxis = d3.axisLeft(y).tickFormat(d3.format(".2e"));
+  const xAxis = d3.axisBottom(x);
+
+  svg.append("g").call(yAxis);
+  svg.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
+
+  const line = d3.line()
+    .x(d => x(d.date))
+    .y(d => y(d.value));
+
+  // Split the data into pre-event and post-event
+  const preEvent = parsedData.filter(d => d.time <= eventYear);
+  const postEvent = parsedData.filter(d => d.time >= eventYear);
+
+  // Draw two lines with different colors
+  svg.append("path")
+    .datum(preEvent)
+    .attr("fill", "none")
+    .attr("stroke", "blue")  // pre-event color
+    .attr("stroke-width", 2)
+    .attr("d", line);
+
+  svg.append("path")
+    .datum(postEvent)
+    .attr("fill", "none")
+    .attr("stroke", "red")   // post-event color
+    .attr("stroke-width", 2)
+    .attr("d", line);
+
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", -5)
+    .attr("text-anchor", "middle")
+    .text(regionName);
+}
+
 
 
 // Load TopoJSON countries and setup initial visualization
@@ -112,21 +176,24 @@ d3.json("data/countries.json").then(world => {
     updateYear(initialCsv);
   }
 
-  // Setup Scrollama
-  const scroller = scrollama();
-  scroller
-  .setup({ step: ".step" })
+const scroller = scrollama();
+scroller.setup({ step: ".step" })
   .onStepEnter(async ({ element }) => {
-    const file = element.dataset.file;
+    const globeFile = element.dataset.globeFile;
+    const chartFile = element.dataset.chartFile;
+    const region = element.dataset.region;
+    const year = +element.dataset.year;
 
-    updateYear(file);   // ✅ update the map
+    // 1️⃣ Update the globe
+    updateYear(globeFile);
 
+    // 3️⃣ Load chart data & draw line chart
+    const chartData = await d3.csv(chartFile);
     const block = element.closest(".step-block");
     const chartDiv = block.querySelector(".chart");
+    drawRegionChart(region, chartDiv, chartData, year);
+  });
 
-    const data = await d3.csv(file);
-    drawChart(chartDiv, data); // draw the chart for this year
-});
 
 
 });
@@ -148,23 +215,4 @@ const transitionObserver = new IntersectionObserver(entries => {
 
 transitionObserver.observe(intro);
 
-
-
-
-// window.addEventListener("resize", () => {
-//   // Update canvas size
-//   const width = container.innerWidth;
-//   const height = container.innerHeight;
-//   canvas.width = width;
-//   canvas.height = height;
-
-//   const radius = Math.min(width, height) / 2.2;
-
-//   // Update projection
-//   projection
-//     .scale(radius)
-//     .translate([width / 2, height / 2]);
-
-//   draw();  // redraw globe with new size
-// });
 
