@@ -185,6 +185,7 @@ body {
   padding: 0 0 80px;
 }
 
+
 #scrolly.visible {
   opacity: 1;
 }
@@ -221,7 +222,17 @@ body {
   text-transform: uppercase;
   color: var(--accent-main);
 }
-
+.step {
+  margin: 0 0 16px;
+  padding: 14px 18px;
+  background: #ffffff;
+  border-radius: 999px;
+  border: 1px solid #dde2ec;
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1f7a8c;
+}
 .step-block {
   margin-bottom: 220px;
 }
@@ -231,7 +242,15 @@ body {
   font-size: 0.95rem;
   color: var(--text-muted);
 }
-
+.ghost-step {
+  height: 100vh;
+  margin-bottom: 0;
+  opacity: 0;            
+  pointer-events: none;
+}
+.ghost-step .step {
+    min-height: 100vh;
+}
 .chart {
   height: 300px;
   margin-top: 10px;
@@ -262,4 +281,24 @@ body {
   background: #f9fafb;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
   transform: translateY(-1px);
+}
+
+
+
+body.cinematic-mode .left-panel {
+    width: 100%;
+    height: 100vh;
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 10;
+}
+
+body.cinematic-mode .content-area {
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.cinematic-mode #scrolly {
+    padding: 0;
 }

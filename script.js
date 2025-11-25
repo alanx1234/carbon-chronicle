@@ -6,6 +6,8 @@ const spaceCtx = spaceCanvas.getContext("2d");
 
 let spaceWidth = window.innerWidth;
 let spaceHeight = window.innerHeight;
+let scrollTimeout = null;
+let userIsScrolling = false;
 
 function resizeSpaceCanvas() {
   spaceWidth = window.innerWidth;
@@ -14,20 +16,18 @@ function resizeSpaceCanvas() {
   spaceCanvas.height = spaceHeight;
 }
 
+
 let stars = [];
 let warpFactor = 0.25;
 const WARP_IDLE = 0.25;
 const WARP_CRUISE = 0.6;
-const WARP_BURST = 40.0; // High burst for the fast transition
+const WARP_BURST = 40.0;
 let warpTarget = WARP_IDLE;
 let starGlobalAlpha = 1;
 let starTargetAlpha = 1;
-let isInStory = false;
-let isWarping = false;
 let warpTimeout = null;
 let slowTimeout = null;
 let fadeTimeout = null;
-
 let lastTime = 0;
 
 function resetStar(star) {
@@ -49,7 +49,6 @@ function initStars() {
   for (let i = 0; i < 260; i++) {
     const star = {};
     resetStar(star);
-    // Pre-scatter: Move stars outward immediately so there is no empty gap at start
     const startDistance = Math.random() * Math.max(spaceWidth, spaceHeight);
     star.x += star.vx * startDistance;
     star.y += star.vy * startDistance;
@@ -84,7 +83,6 @@ function renderSpace(timestamp) {
     }
 
     if (warpFactor < 1.5) {
-      // --- ORIGINAL LOOK ---
       const twinkle = 0.7 + 0.3 * Math.sin(star.tw);
       const alpha = starGlobalAlpha * twinkle;
       const coreRadius = star.size;
@@ -102,7 +100,6 @@ function renderSpace(timestamp) {
       spaceCtx.arc(star.x, star.y, glowRadius, 0, Math.PI * 2);
       spaceCtx.fill();
     } else {
-      // --- COOL WARP LOOK ---
       const trailLength = warpFactor * star.speed * 0.8;
       const tailX = star.x - star.vx * trailLength;
       const tailY = star.y - star.vy * trailLength;
@@ -122,7 +119,12 @@ function renderSpace(timestamp) {
 
     spaceCtx.globalAlpha = 1;
   }
-
+  if (!isWarping && document.body.classList.contains("cinematic-mode")) {
+    if (warpFactor < 0.3) {
+      warpTarget = 0.0; // no more motion
+      starTargetAlpha += (0 - starTargetAlpha) * 0.03 * deltaTime;
+    }
+  }
   requestAnimationFrame(renderSpace);
 }
 
@@ -131,17 +133,36 @@ initStars();
 requestAnimationFrame(renderSpace);
 window.addEventListener("resize", resizeSpaceCanvas);
 
+
 const context = canvas.getContext("2d");
 const container = document.querySelector(".left-panel");
 
+function setProjection(scale, width, height) {
+  projection = d3
+    .geoOrthographic()
+    .clipAngle(90)
+    .rotate([-80, -10])
+    .scale(scale)
+    .translate([width / 2, height / 2]);
+
+  path = d3.geoPath().projection(projection).context(context);
+}
+
 let projection = d3.geoOrthographic().clipAngle(90).rotate([-80, -10]);
-
 let path = d3.geoPath().projection(projection).context(context);
+const sphere = { type: "Sphere" };
+const graticule = d3.geoGraticule10();
 
-let countries,
-  plotData = [];
+let countries;
+let plotData = [];
+let targetScale = 250;
 
-// Resize canvas based on .left-panel
+let isEarthVisible = true;
+let isInStory = false;
+let isWarping = false;
+let isZooming = false;
+let dotAlpha = 1.0;
+
 function resizeCanvas() {
   const rect = container.getBoundingClientRect();
   const width = rect.width;
@@ -150,45 +171,88 @@ function resizeCanvas() {
   canvas.width = width;
   canvas.height = height;
 
-  projection
-    .scale(Math.min(width, height) / 2.2)
-    .translate([width / 2, height / 2]);
+  targetScale = Math.min(width, height) / 2.2;
 
-  path = d3.geoPath().projection(projection).context(context);
-
+  setProjection(targetScale, width, height);
   draw();
 }
 
-// Draw function
 function draw() {
   context.clearRect(0, 0, canvas.width, canvas.height);
+  const inCinematic = document.body.classList.contains("cinematic-mode");
 
-  // Draw CO₂ points
-  if (plotData.length) {
-    plotData.forEach((d) => {
-      const [x, y] = projection([d.lon, d.lat]);
-      if (x != null && y != null) {
-        context.fillStyle = colorScale(d.co2);
-        context.fillRect(x - 3, y - 3, 6, 6);
+  if (!isEarthVisible) return;
+
+  if (isZooming) {
+    if (countries) {
+      const t = projection.translate();
+      const cx = t[0];
+      const cy = t[1];
+      const r = projection.scale();
+
+      context.beginPath();
+      context.arc(cx, cy, r, 0, Math.PI * 2);
+      context.fillStyle = colorScale(CO2_MIN);
+      context.fill();
+
+      if (inCinematic) {
+        context.fillStyle = "rgba(15, 23, 42, 1)";
+        context.strokeStyle = "rgba(255, 255, 255, 0.95)";
+        context.lineWidth = 1.2;
+      } else {
+        context.fillStyle = "#ffffff08";
+        context.strokeStyle = "#000";
+        context.lineWidth = 0.6;
       }
+
+      context.beginPath();
+      path(countries);
+      context.fill();
+      context.stroke();
+    }
+
+    return;
+  }
+
+  if (plotData.length && isEarthVisible) {
+    const t = projection.translate();
+    const cx = t[0];
+    const cy = t[1];
+    const r = projection.scale() - 3;
+
+    plotData.forEach((d) => {
+      const coords = projection([d.lon, d.lat]);
+      if (!coords) return;
+      const x = coords[0];
+      const y = coords[1];
+      const dx = x - cx;
+      const dy = y - cy;
+      if (dx * dx + dy * dy > r * r) return;
+
+      context.fillStyle = colorScale(d.co2);
+      context.fillRect(x - 3, y - 3, 6, 6);
     });
   }
 
-  // Draw countries
   if (countries) {
-    context.fillStyle = "#ffffff04";
-    context.strokeStyle = "#000";
-    countries.features.forEach((f) => {
-      context.beginPath();
-      path(f);
-      context.fill();
-      context.stroke();
-    });
+    if (inCinematic) {
+      context.fillStyle = "rgba(15, 23, 42, 1)";
+      context.strokeStyle = "rgba(255, 255, 255, 0.95)";
+      context.lineWidth = 1.2;
+    } else {
+      context.fillStyle = "#ffffff08";
+      context.strokeStyle = "#000";
+      context.lineWidth = 0.6;
+    }
+
+    context.beginPath();
+    path(countries);
+    context.fill();
+    context.stroke();
   }
 }
 
 window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
 
 const CO2_MIN = 0.0;
 const CO2_MID = 3.01215e-8;
@@ -207,7 +271,6 @@ function updateYear(csvFile) {
       co2: +d.fco2antt,
     }));
 
-    // Bin points
     const binnedData = d3.rollup(
       yearData,
       (v) => d3.mean(v, (d) => d.co2),
@@ -221,19 +284,16 @@ function updateYear(csvFile) {
         plotData.push({ lat: +lat, lon: +lon, co2 });
       });
     });
-    d3.select("#info").text(
-      `Year: ${csvFile}, Min: ${CO2_MIN}, Max: ${CO2_MAX}`
-    );
 
-    draw(); // redraw globe
+    draw();
   });
 }
 
 function drawRegionChart(regionName, chartDiv, data, eventYear) {
-  chartDiv.innerHTML = ""; // clear previous chart
+  chartDiv.innerHTML = "";
 
   const parsedData = data.map((d) => ({
-    time: +d.time, // numeric year
+    time: +d.time,
     date: new Date(+d.time, 0, 1),
     value: +d[regionName],
   }));
@@ -271,16 +331,14 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     .x((d) => x(d.date))
     .y((d) => y(d.value));
 
-  // Split the data into pre-event and post-event
   const preEvent = parsedData.filter((d) => d.time <= eventYear);
   const postEvent = parsedData.filter((d) => d.time >= eventYear);
 
-  // Draw two lines with different colors
   svg
     .append("path")
     .datum(preEvent)
     .attr("fill", "none")
-    .attr("stroke", "blue") // pre-event color
+    .attr("stroke", "blue")
     .attr("stroke-width", 2)
     .attr("d", line);
 
@@ -288,7 +346,7 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     .append("path")
     .datum(postEvent)
     .attr("fill", "none")
-    .attr("stroke", "red") // post-event color
+    .attr("stroke", "red")
     .attr("stroke-width", 2)
     .attr("d", line);
 
@@ -300,31 +358,48 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     .text(regionName);
 }
 
-// Load TopoJSON countries and setup initial visualization
 d3.json("data/countries.json").then((world) => {
   countries = topojson.feature(world, world.objects.countries);
-
-  // Draw empty globe first
+  resizeCanvas();
   draw();
 
-  // Load initial year (first step)
-  const firstStep = document.querySelector(".step");
-  if (firstStep) {
-    const initialCsv = firstStep.dataset.globeFile;
+  const firstDataStep = document.querySelector(".step[data-globe-file]");
+  if (firstDataStep) {
+    const initialCsv = firstDataStep.dataset.globeFile;
     updateYear(initialCsv);
   }
 
   const scroller = scrollama();
   scroller.setup({ step: ".step" }).onStepEnter(async ({ element }) => {
+    const stepType = element.dataset.stepType;
+    if (stepType === "landing") {
+      document.body.classList.add("cinematic-mode");
+
+      isEarthVisible = true;
+      resizeCanvas();
+      return;
+    }
+    if (stepType === "approach") {
+      document.body.classList.add("cinematic-mode");
+      isEarthVisible = true;
+      draw();
+      return;
+    }
+
+    document.body.classList.remove("cinematic-mode");
+    resizeCanvas();
+    isEarthVisible = true;
+
     const globeFile = element.dataset.globeFile;
     const chartFile = element.dataset.chartFile;
     const region = element.dataset.region;
     const year = +element.dataset.year;
 
-    // 1️⃣ Update the globe
+    setProjection(targetScale, canvas.width, canvas.height);
+
     updateYear(globeFile);
 
-    // 3️⃣ Load chart data & draw line chart
+
     const chartData = await d3.csv(chartFile);
     const block = element.closest(".step-block");
     const chartDiv = block.querySelector(".chart");
@@ -359,34 +434,95 @@ function enterStory() {
   scrolly.classList.add("visible");
   intro.classList.add("slide-up");
 
+  document.body.classList.add("cinematic-mode");
+  resizeCanvas();
+
+  const scrollyTop = scrolly.offsetTop;
+  window.scrollTo({
+    top: scrollyTop,
+    behavior: "auto",
+  });
+
+  initStars();
+  warpFactor = WARP_IDLE;
+  starGlobalAlpha = 1;
   starTargetAlpha = 1;
+
+  isEarthVisible = false;
+  draw();
+
   warpTarget = WARP_BURST;
+  const WARP_DURATION = 1300;
+  const DECEL_DURATION = 700;
+  const ZOOM_DURATION = 1200;
 
   warpTimeout = setTimeout(() => {
     warpTarget = WARP_CRUISE;
 
     slowTimeout = setTimeout(() => {
-      warpTarget = 0.02;
+      warpTarget = 0.05;
+      starTargetAlpha = 0.3;
 
-      fadeTimeout = setTimeout(() => {
-        starTargetAlpha = 0;
-        isWarping = false;
-      }, 1400);
-    }, 1400);
-  }, 400);
+      isEarthVisible = true;
+      dotAlpha = 0;
+      isZooming = true;
+
+      const startScale = targetScale * 0.12;
+      const endScale = targetScale * 0.9;
+
+      projection.scale(startScale);
+      draw();
+
+      d3.transition()
+        .duration(ZOOM_DURATION)
+        .ease(d3.easeCubicInOut)
+        .tween("zoom-in", () => {
+          const interpScale = d3.interpolate(startScale, endScale);
+          return (t) => {
+            projection.scale(interpScale(t));
+            draw();
+          };
+        })
+        .on("end", () => {
+          isZooming = false;
+          draw();
+
+          warpTarget = WARP_IDLE;
+          starTargetAlpha = 1;
+          isWarping = false;
+
+          fadeTimeout = setTimeout(() => {
+            if (!isWarping) {
+              warpTarget = 0.0;
+              starTargetAlpha = 0.0;
+            }
+            fadeTimeout = null;
+          }, 1000);
+        });
+
+    }, DECEL_DURATION);
+  }, WARP_DURATION);
 }
 
-function leaveStory() {
-  isInStory = false;
-  isWarping = false;
-  clearWarpTimers();
 
+function leaveStory() {
+  if (isWarping) return;
+
+  isInStory = false;
+  clearWarpTimers();
   warpTarget = WARP_IDLE;
   starTargetAlpha = 1;
+  starGlobalAlpha = 1;
+  isEarthVisible = true;
 
   scrolly.classList.remove("visible");
   intro.classList.remove("slide-up");
+
+  document.body.classList.remove("cinematic-mode");
+  resizeCanvas();
+  draw();
 }
+
 
 const transitionObserver = new IntersectionObserver(
   (entries) => {
@@ -402,3 +538,5 @@ const transitionObserver = new IntersectionObserver(
 );
 
 transitionObserver.observe(intro);
+
+
