@@ -206,11 +206,223 @@ let hasStartedStory = false;
 
 const racePanelInner = document.getElementById("race-panel-inner");
 
-function expandRacePanel() {
-  document.body.classList.add("race-lift");
+// ---------------------------- Bar chart race setup ------------------------------------
 
-  const EXPAND_DELAY = 2000; // how long you wait before white panel starts
-  const STRETCH_DURATION = 800; // MUST match the CSS transition duration
+let raceInitialized = false;   // so we only build the chart once
+
+// NOTE: update this path if your CSV file has a different name/path.
+const RACE_DATA_FILE = "data/top_nations.csv";
+
+// We'll use these outside the init function later if needed
+let raceSvg, raceX, raceY, raceColor, raceYears, raceYearDataByYear, raceMaxValue;
+
+function initBarChartRace() {
+  if (raceInitialized) return;     // don't re-initialize
+  raceInitialized = true;
+
+  const ANIM_DURATION = 450;   // ms for transitions
+  const STEP_INTERVAL = 500;   // ms between years; slightly larger than duration
+
+  // 1. Get size of the inner panel after it's expanded
+  const margin = { top: 20, right: 40, bottom: 30, left: 120 };
+  const innerWidth  = racePanelInner.clientWidth;
+  const innerHeight = racePanelInner.clientHeight;
+
+  const width  = innerWidth  - margin.left - margin.right;
+  const height = innerHeight - margin.top  - margin.bottom;
+
+  // 2. Create the SVG
+  raceSvg = d3
+    .select("#race-panel-inner")
+    .append("svg")
+    .attr("viewBox", `0 0 ${innerWidth} ${innerHeight}`)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // 3. Load the emissions data
+  d3.csv(RACE_DATA_FILE).then(raw => {
+    // Parse numbers
+    raw.forEach(d => {
+      d.year = +d.year;
+      d.value = +d.MtCO2_per_year;
+      d.region = d.region;
+    });
+
+    // Group by year: Map(year -> array of rows for that year)
+    const grouped = d3.group(raw, d => d.year);
+    raceYears = Array.from(grouped.keys()).sort(d3.ascending);
+
+    // For each year, sort regions by emissions and keep top N
+    const TOP_N = 8;
+
+    raceYearDataByYear = new Map();
+    raceMaxValue = 0;
+
+    raceYears.forEach(year => {
+      const rows = grouped.get(year)
+        .slice()
+        .sort((a, b) => d3.descending(a.value, b.value))
+        .slice(0, TOP_N);
+
+      raceYearDataByYear.set(year, rows);
+      const localMax = d3.max(rows, d => d.value);
+      if (localMax > raceMaxValue) {
+        raceMaxValue = localMax;
+      }
+    });
+
+    // 4. Scales
+    raceX = d3.scaleLinear()
+      .domain([0, raceMaxValue])
+      .range([0, width * 0.9]);
+
+    raceY = d3.scaleBand()
+      .range([0, height])
+      .padding(0.25);
+
+    raceColor = d3.scaleOrdinal(d3.schemeTableau10);
+
+    // Axes groups
+    const xAxisGroup = raceSvg.append("g")
+      .attr("class", "race-x-axis")
+      .attr("transform", `translate(0,0)`);
+
+    const yAxisGroup = raceSvg.append("g")
+      .attr("class", "race-y-axis");
+
+    // Large year label
+    const yearLabel = raceSvg.append("text")
+      .attr("class", "race-year-label")
+      .attr("x", width)
+      .attr("y", height + margin.bottom - 4)
+      .attr("text-anchor", "end")
+      .attr("fill", "#0f172a")
+      .attr("font-size", 26)
+      .attr("font-weight", 600);
+
+    // Format for numbers (e.g. 12.3, 105.2)
+    const valueFormat = d3.format(".1f");
+
+    // 5. Function to render a given year
+    // Called every time we move to a new year
+    function renderYear(year, yearData) {
+      // update Y positions for this year's ranking
+      raceY.domain(yearData.map(d => d.region));
+
+      // ----- BARS -----
+      const bars = raceSvg.selectAll("rect.bar")
+        .data(yearData, d => d.region); // key = region
+
+      const barsEnter = bars.enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", 0)
+        .attr("y", d => raceY(d.region))
+        .attr("height", raceY.bandwidth())
+        .attr("width", 0)  // start collapsed
+        .attr("fill", d => raceColor(d.region));
+
+      barsEnter.merge(bars)
+        .transition()
+        .duration(ANIM_DURATION)
+        .attr("y", d => raceY(d.region))
+        .attr("height", raceY.bandwidth())
+        .attr("width", d => raceX(d.value));
+
+      bars.exit()
+        .transition()
+        .duration(ANIM_DURATION)
+        .attr("width", 0)
+        .remove();
+
+      // ----- COUNTRY NAMES (static on left) -----
+      const nameLabels = raceSvg.selectAll("text.name-label")
+        .data(yearData, d => d.region);
+
+      const nameEnter = nameLabels.enter()
+        .append("text")
+        .attr("class", "name-label")
+        .attr("text-anchor", "end")
+        .attr("x", -8)   // fixed left position
+        .attr("dy", "0.35em")
+        .text(d => d.region);
+
+      nameEnter.merge(nameLabels)
+        .transition()
+        .duration(ANIM_DURATION)
+        .attr("y", d => raceY(d.region) + raceY.bandwidth() / 2);
+
+      nameLabels.exit()
+        .transition()
+        .duration(ANIM_DURATION)
+        .style("opacity", 0)
+        .remove();
+
+      // ----- VALUES (animated, to the right of bars) -----
+      const valueLabels = raceSvg.selectAll("text.value-label")
+        .data(yearData, d => d.region);
+
+      const valueEnter = valueLabels.enter()
+        .append("text")
+        .attr("class", "value-label")
+        .attr("text-anchor", "start")
+        .attr("dy", "0.35em");
+
+      // tween text + x-position for both new + existing labels
+      valueEnter.merge(valueLabels)
+        .transition()
+        .duration(ANIM_DURATION)
+        .tween("text", function(d) {
+          const that = this;
+          const prev = this.__prevValue || 0;
+          const interp = d3.interpolateNumber(prev, d.value);
+          this.__prevValue = d.value;  // remember for next year
+
+          return function(t) {
+            const v = interp(t);
+            that.textContent = valueFormat(v);          // 822.5 → 900.3 smoothly
+            that.setAttribute("x", raceX(v) + 6);       // move label with bar end
+            that.setAttribute(
+              "y",
+              raceY(d.region) + raceY.bandwidth() / 2
+            );
+          };
+        });
+
+      valueLabels.exit()
+        .transition()
+        .duration(ANIM_DURATION)
+        .style("opacity", 0)
+        .remove();
+
+      // ----- x-axis + big year label -----
+      xAxisGroup
+        .transition()
+        .duration(ANIM_DURATION)
+        .call(d3.axisTop(raceX).ticks(4));
+
+      yearLabel.text(year);
+    }
+
+    let yearIndex = 0;
+    let year = raceYears[yearIndex];
+    renderYear(year, raceYearDataByYear.get(year));
+
+    d3.interval(() => {
+      yearIndex = (yearIndex + 1) % raceYears.length;
+      year = raceYears[yearIndex];
+      renderYear(year, raceYearDataByYear.get(year));
+    }, STEP_INTERVAL);
+
+  }); // ← closes d3.csv(...).then(raw => { ... })
+}
+
+
+function expandRacePanel() {
+  document.body.classList.add("race-lift"); // for the little pop up motion
+
+  const EXPAND_DELAY = 700; // how long you wait before white panel starts
+  const STRETCH_DURATION = 500; // MUST match the CSS transition duration
 
   // make sure scroll is locked during the whole sequence
   if (!scrollLocked) {
@@ -222,6 +434,7 @@ function expandRacePanel() {
 
     // wait for the stretch animation to finish, THEN unlock scroll
     setTimeout(() => {
+      initBarChartRace();   // <-- new line
       unlockScroll();
     }, STRETCH_DURATION);
   }, EXPAND_DELAY);
