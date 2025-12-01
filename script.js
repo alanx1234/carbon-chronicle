@@ -1,4 +1,3 @@
-// Setup canvas and projection
 const canvas = document.getElementById("globe");
 
 const spaceCanvas = document.getElementById("space-bg");
@@ -10,7 +9,6 @@ let scrollTimeout = null;
 let userIsScrolling = false;
 
 let hasExitedIntro = false;
-
 
 let stars = [];
 let warpFactor = 0.25;
@@ -25,6 +23,12 @@ let slowTimeout = null;
 let fadeTimeout = null;
 let lastTime = 0;
 let warpHuePhase = 0;
+let hasWarped = false;
+let activeRegionLabel = "";
+
+const globeCache = {};
+
+
 
 function resizeSpaceCanvas() {
   spaceWidth = window.innerWidth;
@@ -73,10 +77,14 @@ function renderSpace(timestamp) {
     warpTarget = 0;
     starGlobalAlpha = 0;
     starTargetAlpha = 0;
-    spaceCtx.clearRect(0, 0, spaceWidth, spaceHeight);
+
+    // FIX: Draw the dark background instead of clearing it to transparency
+    spaceCtx.fillStyle = "#020617";
+    spaceCtx.fillRect(0, 0, spaceWidth, spaceHeight);
+
     requestAnimationFrame(renderSpace);
     return;
-  }
+}
 
   spaceCtx.fillStyle = "rgba(2, 6, 23, 0.9)";
   spaceCtx.fillRect(0, 0, spaceWidth, spaceHeight);
@@ -143,7 +151,7 @@ function renderSpace(timestamp) {
   }
   if (!isWarping && document.body.classList.contains("cinematic-mode")) {
     if (warpFactor < 0.3) {
-      warpTarget = 0.0; // no more motion
+      warpTarget = 0.0;
       starTargetAlpha += (0 - starTargetAlpha) * 0.03 * deltaTime;
     }
   }
@@ -154,7 +162,6 @@ resizeSpaceCanvas();
 initStars();
 requestAnimationFrame(renderSpace);
 window.addEventListener("resize", resizeSpaceCanvas);
-
 
 const context = canvas.getContext("2d");
 const container = document.querySelector(".left-panel");
@@ -172,8 +179,6 @@ function showIntroCards() {
 function hideIntroCards() {
   document.body.classList.remove("story-intro-active");
 }
-
-
 
 function setProjection(scale, width, height) {
   projection = d3
@@ -207,32 +212,32 @@ let hasStartedStory = false;
 
 const racePanelInner = document.getElementById("race-panel-inner");
 
-// ---------------------------- Bar chart race setup ------------------------------------
+let raceInitialized = false;
 
-let raceInitialized = false;   // so we only build the chart once
-
-// NOTE: update this path if your CSV file has a different name/path.
 const RACE_DATA_FILE = "data/top_nations.csv";
 
-// We'll use these outside the init function later if needed
-let raceSvg, raceX, raceY, raceColor, raceYears, raceYearDataByYear, raceMaxValue;
+let raceSvg,
+  raceX,
+  raceY,
+  raceColor,
+  raceYears,
+  raceYearDataByYear,
+  raceMaxValue;
 
 function initBarChartRace() {
-  if (raceInitialized) return;     // don't re-initialize
+  if (raceInitialized) return;
   raceInitialized = true;
 
-  const ANIM_DURATION = 200;   // ms for transitions
-  const STEP_INTERVAL = 220;   // ms between years; slightly larger than duration
+  const ANIM_DURATION = 170;
+  const STEP_INTERVAL = 180;
 
-  // 1. Get size of the inner panel after it's expanded
   const margin = { top: 20, right: 40, bottom: 30, left: 120 };
-  const innerWidth  = racePanelInner.clientWidth;
+  const innerWidth = racePanelInner.clientWidth;
   const innerHeight = racePanelInner.clientHeight;
 
-  const width  = innerWidth  - margin.left - margin.right;
-  const height = innerHeight - margin.top  - margin.bottom;
+  const width = innerWidth - margin.left - margin.right;
+  const height = innerHeight - margin.top - margin.bottom;
 
-  // 2. Create the SVG
   raceSvg = d3
     .select("#race-panel-inner")
     .append("svg")
@@ -240,59 +245,53 @@ function initBarChartRace() {
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // 3. Load the emissions data
-  d3.csv(RACE_DATA_FILE).then(raw => {
-    // Parse numbers
-    raw.forEach(d => {
+  d3.csv(RACE_DATA_FILE).then((raw) => {
+    raw.forEach((d) => {
       d.year = +d.year;
       d.value = +d.MtCO2_per_year;
       d.region = d.region;
     });
 
-    // Group by year: Map(year -> array of rows for that year)
-    const grouped = d3.group(raw, d => d.year);
+    const grouped = d3.group(raw, (d) => d.year);
     raceYears = Array.from(grouped.keys()).sort(d3.ascending);
 
-    // For each year, sort regions by emissions and keep top N
     const TOP_N = 8;
 
     raceYearDataByYear = new Map();
     raceMaxValue = 0;
 
-    raceYears.forEach(year => {
-      const rows = grouped.get(year)
+    raceYears.forEach((year) => {
+      const rows = grouped
+        .get(year)
         .slice()
         .sort((a, b) => d3.descending(a.value, b.value))
         .slice(0, TOP_N);
 
       raceYearDataByYear.set(year, rows);
-      const localMax = d3.max(rows, d => d.value);
+      const localMax = d3.max(rows, (d) => d.value);
       if (localMax > raceMaxValue) {
         raceMaxValue = localMax;
       }
     });
 
-    // 4. Scales
-    raceX = d3.scaleLinear()
+    raceX = d3
+      .scaleLinear()
       .domain([0, raceMaxValue])
       .range([0, width * 0.9]);
 
-    raceY = d3.scaleBand()
-      .range([0, height])
-      .padding(0.25);
+    raceY = d3.scaleBand().range([0, height]).padding(0.25);
 
     raceColor = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // Axes groups
-    const xAxisGroup = raceSvg.append("g")
+    const xAxisGroup = raceSvg
+      .append("g")
       .attr("class", "race-x-axis")
       .attr("transform", `translate(0,0)`);
 
-    const yAxisGroup = raceSvg.append("g")
-      .attr("class", "race-y-axis");
+    const yAxisGroup = raceSvg.append("g").attr("class", "race-y-axis");
 
-    // Large year label
-    const yearLabel = raceSvg.append("text")
+    const yearLabel = raceSvg
+      .append("text")
       .attr("class", "race-year-label")
       .attr("x", width)
       .attr("y", height + margin.bottom - 4)
@@ -301,18 +300,14 @@ function initBarChartRace() {
       .attr("font-size", 26)
       .attr("font-weight", 600);
 
-    // Format for numbers (e.g. 12.3, 105.2)
     const valueFormat = d3.format(".1f");
 
-    // 5. Function to render a given year
-    // Called every time we move to a new year
     function renderYear(year, yearData) {
-      // update Y positions for this year's ranking
-      raceY.domain(yearData.map(d => d.region));
+      raceY.domain(yearData.map((d) => d.region));
 
-      // ----- BARS -----
-      const bars = raceSvg.selectAll("rect.bar")
-        .data(yearData, d => d.region); // key = region
+      const bars = raceSvg
+        .selectAll("rect.bar")
+        .data(yearData, (d) => d.region);
 
       const barsEnter = bars
         .enter()
@@ -321,115 +316,153 @@ function initBarChartRace() {
         .attr("x", 0)
         .attr("y", (d) => raceY(d.region))
         .attr("height", raceY.bandwidth())
-        .attr("width", 0) // start collapsed
-        .attr("rx", 3) // <-- add
-        .attr("ry", 3) // <-- add
+        .attr("width", 0)
+        .attr("rx", 3)
+        .attr("ry", 3)
         .attr("fill", (d) => raceColor(d.region));
 
-
-      barsEnter.merge(bars)
+      barsEnter
+        .merge(bars)
         .transition()
         .duration(ANIM_DURATION)
-        .attr("y", d => raceY(d.region))
+        .attr("y", (d) => raceY(d.region))
         .attr("height", raceY.bandwidth())
-        .attr("width", d => raceX(d.value));
+        .attr("width", (d) => raceX(d.value));
 
-      bars.exit()
+      bars
+        .exit()
         .transition()
         .duration(ANIM_DURATION)
         .attr("width", 0)
         .remove();
 
-      // ----- COUNTRY NAMES (static on left) -----
-      const nameLabels = raceSvg.selectAll("text.name-label")
-        .data(yearData, d => d.region);
+      const nameLabels = raceSvg
+        .selectAll("text.name-label")
+        .data(yearData, (d) => d.region);
 
-      const nameEnter = nameLabels.enter()
+      const nameEnter = nameLabels
+        .enter()
         .append("text")
         .attr("class", "name-label")
         .attr("text-anchor", "end")
-        .attr("x", -8)   // fixed left position
+        .attr("x", -8)
         .attr("dy", "0.35em")
-        .text(d => d.region);
+        .text((d) => d.region);
 
-      nameEnter.merge(nameLabels)
+      nameEnter
+        .merge(nameLabels)
         .transition()
         .duration(ANIM_DURATION)
-        .attr("y", d => raceY(d.region) + raceY.bandwidth() / 2);
+        .attr("y", (d) => raceY(d.region) + raceY.bandwidth() / 2);
 
-      nameLabels.exit()
+      nameLabels
+        .exit()
         .transition()
         .duration(ANIM_DURATION)
         .style("opacity", 0)
         .remove();
 
-      // ----- VALUES (animated, to the right of bars) -----
-      const valueLabels = raceSvg.selectAll("text.value-label")
-        .data(yearData, d => d.region);
+      const valueLabels = raceSvg
+        .selectAll("text.value-label")
+        .data(yearData, (d) => d.region);
 
-      const valueEnter = valueLabels.enter()
+      const valueEnter = valueLabels
+        .enter()
         .append("text")
         .attr("class", "value-label")
         .attr("text-anchor", "start")
         .attr("dy", "0.35em");
 
-      // tween text + x-position for both new + existing labels
-      valueEnter.merge(valueLabels)
+      valueEnter
+        .merge(valueLabels)
         .transition()
         .duration(ANIM_DURATION)
-        .tween("text", function(d) {
+        .tween("text", function (d) {
           const that = this;
           const prev = this.__prevValue || 0;
           const interp = d3.interpolateNumber(prev, d.value);
-          this.__prevValue = d.value;  // remember for next year
+          this.__prevValue = d.value;
 
-          return function(t) {
+          return function (t) {
             const v = interp(t);
-            that.textContent = valueFormat(v);          // 822.5 → 900.3 smoothly
-            that.setAttribute("x", raceX(v) + 6);       // move label with bar end
-            that.setAttribute(
-              "y",
-              raceY(d.region) + raceY.bandwidth() / 2
-            );
+            that.textContent = valueFormat(v);
+            that.setAttribute("x", raceX(v) + 6);
+            that.setAttribute("y", raceY(d.region) + raceY.bandwidth() / 2);
           };
         });
 
-      valueLabels.exit()
+      valueLabels
+        .exit()
         .transition()
         .duration(ANIM_DURATION)
         .style("opacity", 0)
         .remove();
 
-      // ----- x-axis + big year label -----
       xAxisGroup
         .transition()
         .duration(ANIM_DURATION)
         .call(d3.axisTop(raceX).ticks(4));
-
-      yearLabel.text(year);
     }
 
-    let yearIndex = 0;
-    let year = raceYears[yearIndex];
+    let currentYearIndex = 0;
+
+    let year = raceYears[currentYearIndex];
     renderYear(year, raceYearDataByYear.get(year));
+    yearLabel.text(year);
 
-    d3.interval(() => {
-      yearIndex = (yearIndex + 1) % raceYears.length;
-      year = raceYears[yearIndex];
+    let raceInterval = null;
+    const racePanel = document.getElementById("race-panel-left");
+    const playButton = document.getElementById("race-play-button");
+
+    function handleRaceCompletion() {
+      if (raceInterval) {
+        raceInterval.stop();
+      }
+      racePanel.classList.add("race-paused");
+    }
+
+    function startRace() {
+      currentYearIndex = 0;
+      racePanel.classList.remove("race-paused");
+
+      year = raceYears[currentYearIndex];
       renderYear(year, raceYearDataByYear.get(year));
-    }, STEP_INTERVAL);
+      yearLabel.text(year);
 
-  }); // ← closes d3.csv(...).then(raw => { ... })
+      raceInterval = d3.interval(() => {
+        currentYearIndex += 2;
+
+        if (currentYearIndex >= raceYears.length) {
+          currentYearIndex = raceYears.length - 1;
+          year = raceYears[currentYearIndex];
+          renderYear(year, raceYearDataByYear.get(year));
+          yearLabel.text(year);
+
+          handleRaceCompletion();
+          return;
+        }
+
+        year = raceYears[currentYearIndex];
+        renderYear(year, raceYearDataByYear.get(year));
+
+        yearLabel.text(year);
+      }, STEP_INTERVAL);
+    }
+
+    if (playButton) {
+      playButton.addEventListener("click", startRace);
+    }
+
+    startRace();
+  });
 }
 
-
 function expandRacePanel() {
-  document.body.classList.add("race-lift"); // for the little pop up motion
+  document.body.classList.add("race-lift");
 
-  const EXPAND_DELAY = 700; // how long you wait before white panel starts
-  const STRETCH_DURATION = 500; // MUST match the CSS transition duration
+  const EXPAND_DELAY = 700;
+  const STRETCH_DURATION = 500;
 
-  // make sure scroll is locked during the whole sequence
   if (!scrollLocked) {
     lockScroll();
   }
@@ -437,10 +470,13 @@ function expandRacePanel() {
   setTimeout(() => {
     document.body.classList.add("race-expanded");
 
-    // wait for the stretch animation to finish, THEN unlock scroll
     setTimeout(() => {
-      initBarChartRace();   // <-- new line
-      unlockScroll();
+      initBarChartRace();
+
+      const proceedBtn = document.getElementById("proceed-btn");
+      if (proceedBtn) {
+        proceedBtn.classList.add("visible");
+      }
     }, STRETCH_DURATION);
   }, EXPAND_DELAY);
 }
@@ -449,7 +485,6 @@ function collapseRacePanel() {
   document.body.classList.remove("race-expanded");
   document.body.classList.remove("race-lift");
 }
-
 
 function preventScroll(e) {
   if (!scrollLocked) return;
@@ -473,7 +508,9 @@ function preventScrollKeys(e) {
 }
 
 function lockScroll() {
+  if (scrollLocked) return;
   scrollLocked = true;
+  document.body.classList.add("scroll-locked");
   window.addEventListener("wheel", preventScroll, { passive: false });
   window.addEventListener("touchmove", preventScroll, { passive: false });
   window.addEventListener("keydown", preventScrollKeys, { passive: false });
@@ -482,6 +519,7 @@ function lockScroll() {
 function unlockScroll() {
   scrollLocked = false;
   absorbNextScroll = true;
+  document.body.classList.remove("scroll-locked");
 
   window.removeEventListener("wheel", preventScroll);
   window.removeEventListener("touchmove", preventScroll);
@@ -499,19 +537,16 @@ window.addEventListener(
   { passive: false }
 );
 
-
 function resizeCanvas() {
   const rect = container.getBoundingClientRect();
   const width = rect.width;
   const height = rect.height;
 
-  // Make the canvas’s *intrinsic* size match its CSS box
   canvas.style.width = width + "px";
   canvas.style.height = height + "px";
   canvas.width = width;
   canvas.height = height;
 
-  // Preserve current rotation
   const oldRotation = projection.rotate();
 
   targetScale = Math.min(width, height) / 2.2;
@@ -522,15 +557,14 @@ function resizeCanvas() {
   draw();
 }
 
-
 function draw() {
   context.clearRect(0, 0, canvas.width, canvas.height);
   const inCinematic = document.body.classList.contains("cinematic-mode");
 
-  if (!isEarthVisible) return;
+  if (!isEarthVisible && !isZooming) return;
 
   if (isZooming) {
-    if (countries) {
+    if (countries && isEarthVisible) {
       const t = projection.translate();
       const cx = t[0];
       const cy = t[1];
@@ -538,18 +572,28 @@ function draw() {
 
       context.beginPath();
       context.arc(cx, cy, r, 0, Math.PI * 2);
-      context.fillStyle = colorScale(CO2_MIN);
+      context.fillStyle = OCEAN_COLOR;
       context.fill();
 
-      if (inCinematic) {
-        context.fillStyle = "rgba(15, 23, 42, 1)";
-        context.strokeStyle = "rgba(255, 255, 255, 0.95)";
-        context.lineWidth = 1.2;
-      } else {
-        context.fillStyle = "#ffffff08";
-        context.strokeStyle = "#000";
-        context.lineWidth = 0.6;
-      }
+      const glowGrad = context.createRadialGradient(
+        cx,
+        cy,
+        r * 0.95,
+        cx,
+        cy,
+        r * 1.1
+      );
+      glowGrad.addColorStop(0, ATMOS_INNER);
+      glowGrad.addColorStop(1, ATMOS_OUTER);
+
+      context.beginPath();
+      context.arc(cx, cy, r * 1.15, 0, Math.PI * 2);
+      context.fillStyle = glowGrad;
+      context.fill();
+
+      context.fillStyle = "rgba(0,0,0,0)";
+      context.strokeStyle = "rgba(148, 163, 184, 0.9)";
+      context.lineWidth = inCinematic ? 1.2 : 0.8;
 
       context.beginPath();
       path(countries);
@@ -566,8 +610,31 @@ function draw() {
     const cy = t[1];
     const r = projection.scale() - 3;
 
-    plotData.forEach((d) => {
+    context.beginPath();
+    context.arc(cx, cy, r, 0, Math.PI * 2);
+    context.fillStyle = OCEAN_COLOR;
+    context.fill();
 
+    const glowGrad = context.createRadialGradient(
+      cx,
+      cy,
+      r * 0.95,
+      cx,
+      cy,
+      r * 1.1
+    );
+    glowGrad.addColorStop(0, ATMOS_INNER);
+    glowGrad.addColorStop(1, ATMOS_OUTER);
+
+    context.beginPath();
+    context.arc(cx, cy, r * 1.1, 0, Math.PI * 2);
+    context.fillStyle = glowGrad;
+    context.fill();
+
+    const domain = colorScale.domain();
+    const maxVal = domain[domain.length - 1] || 1;
+
+    plotData.forEach((d) => {
       const coords = projection([d.lon, d.lat]);
       if (!coords) return;
       const x = coords[0];
@@ -576,35 +643,114 @@ function draw() {
       const dy = y - cy;
       if (dx * dx + dy * dy > r * r) return;
 
+      const intensity = Math.min(1, d.co2 / maxVal);
+      const radius = 1.4 + intensity * 1.7;
+      const alpha = 0.25 + intensity * 0.75;
+
+      const jitterX = (Math.random() - 0.5) * 1.2;
+      const jitterY = (Math.random() - 0.5) * 1.2;
+
+      context.beginPath();
+      context.arc(x + jitterX, y + jitterY, radius, 0, Math.PI * 2);
       context.fillStyle = colorScale(d.co2);
-      context.fillRect(x - 3, y - 3, 6, 6);
+      context.globalAlpha = alpha;
+      context.fill();
     });
-  }
 
-  if (countries) {
-    if (inCinematic) {
-      context.fillStyle = "rgba(15, 23, 42, 1)";
-      context.strokeStyle = "rgba(255, 255, 255, 0.95)";
-      context.lineWidth = 1.2;
-    } else {
-      context.fillStyle = "#ffffff08";
-      context.strokeStyle = "#000";
-      context.lineWidth = 0.6;
+    context.globalAlpha = 1;
+
+    if (focusLon != null && focusLat != null && !inCinematic) {
+      const focusCoords = projection([focusLon, focusLat]);
+      if (focusCoords) {
+        const fx = focusCoords[0];
+        const fy = focusCoords[1];
+        const haloRadius = r * 0.8;
+
+        context.save();
+        context.beginPath();
+        context.arc(cx, cy, r, 0, Math.PI * 2);
+        context.clip();
+
+        const haloGrad = context.createRadialGradient(
+          fx,
+          fy,
+          0,
+          fx,
+          fy,
+          haloRadius
+        );
+        haloGrad.addColorStop(0, "rgba(56, 189, 248, 0.45)");
+        haloGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
+
+        context.fillStyle = haloGrad;
+        context.beginPath();
+        context.arc(fx, fy, haloRadius, 0, Math.PI * 2);
+        context.fill();
+
+        context.restore();
+
+        if (activeRegionLabel) {
+          const labelX = fx;
+          const labelY = fy + 8;
+
+          context.save();
+          context.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.shadowColor = "rgba(0,0,0,0.7)";
+          context.shadowBlur = 3;
+
+          context.lineTo(labelX - 6, labelY);
+          context.fillStyle = "rgba(226, 232, 240, 0.92)";
+          context.fillText(activeRegionLabel, labelX, labelY);
+
+          context.restore();
+        }
+      }
     }
-
-    context.beginPath();
-    path(countries);
-    context.fill();
-    context.stroke();
   }
+
+
+
+
+if (countries) {
+  context.beginPath();
+  context.strokeStyle = "rgba(148, 163, 184, 0.25)";
+  context.lineWidth = 0.4;
+  path(graticule);
+  context.stroke();
+
+  context.fillStyle = "rgba(0,0,0,0)";
+  context.strokeStyle = "rgba(148, 163, 184, 0.85)";
+  context.lineWidth = inCinematic ? 1.0 : 0.6;
+
+  context.beginPath();
+  path(countries);
+  context.fill();
+  context.stroke();
+}
+
+
 }
 
 window.addEventListener("resize", resizeCanvas);
 const CO2_MIN = 0;
-let colorScale = d3.scaleLinear().range(["green", "yellow", "red"]).clamp(true);
+
+const OCEAN_COLOR = "#020b1f";
+const ATMOS_INNER = "rgba(56, 189, 248, 0.18)";
+const ATMOS_OUTER = "rgba(15, 23, 42, 0)";
+
+let focusLon = null;
+let focusLat = null;
+
+let colorScale = d3
+  .scaleLinear()
+  .range(["#020b1f", "#38bdf8", "#f97316"])
+  .clamp(true);
+
 
 function updateYear(csvFile) {
-  d3.csv(csvFile).then((data) => {
+  function applyGlobeData(data) {
     const yearData = data.map((d) => ({
       lat: +d.lat,
       lon: +d.lon,
@@ -637,8 +783,24 @@ function updateYear(csvFile) {
     });
 
     draw();
-  });
+  }
+
+  if (globeCache[csvFile]) {
+    applyGlobeData(globeCache[csvFile]);
+    return;
+  }
+
+  d3.csv(csvFile)
+    .then((data) => {
+      console.log("Loaded rows:", data.length, "from", csvFile);
+      globeCache[csvFile] = data;
+      applyGlobeData(data);
+    })
+    .catch((err) => {
+      console.error("Error loading CSV", csvFile, err);
+    });
 }
+
 
 const stepViews = {
   "step-1880": { lon: 18, lat: 2 },
@@ -646,9 +808,8 @@ const stepViews = {
   "step-1930": { lon: 5, lat: 50 },
   "step-1945": { lon: 138, lat: 36 },
   "step-1952": { lon: -0, lat: 51 },
-  "step-2014": { lon: -120, lat: 30 }
+  "step-2014": { lon: -120, lat: 30 },
 };
-
 
 let activeRotationTween = null;
 
@@ -680,7 +841,6 @@ function animateGlobeTo(lon, lat, duration = 1600) {
 
   requestAnimationFrame(frame);
 }
-
 
 function drawRegionChart(regionName, chartDiv, data, eventYear) {
   chartDiv.innerHTML = "";
@@ -762,70 +922,80 @@ d3.json("data/countries.json").then((world) => {
     updateYear(initialCsv);
   }
 
-const scroller = scrollama();
+  const scroller = scrollama();
 
-scroller
-  .setup({
-    step: ".step",
-    offset: 0.2
-  })
-  .onStepEnter(async ({ element }) => {
-    const stepType = element.dataset.stepType;
+  scroller
+    .setup({
+      step: ".step",
+      offset: 0.2,
+    })
+    .onStepEnter(async ({ element }) => {
+      if (!hasStartedStory) return;
 
-    // landing / approach behave as before
-    if (stepType === "landing") {
-      document.body.classList.add("cinematic-mode");
-      isEarthVisible = true;
+      focusLon = null;
+      focusLat = null;
+
+      const stepType = element.dataset.stepType;
+
+      if (stepType === "landing") {
+        document.body.classList.add("cinematic-mode");
+        isEarthVisible = true;
+        resizeCanvas();
+        return;
+      }
+
+      if (stepType === "approach") {
+        document.body.classList.add("cinematic-mode");
+        isEarthVisible = true;
+        draw();
+        return;
+      }
+
+      const block = element.closest(".step-block");
+      document.querySelectorAll(".step-block").forEach((b) => {
+        b.classList.remove("is-active");
+      });
+      if (block) block.classList.add("is-active");
+
+      collapseRacePanel();
+      hideIntroCards();
+      document.body.classList.remove("cinematic-mode");
+
       resizeCanvas();
-      return;
-    }
 
-    if (stepType === "approach") {
-      document.body.classList.add("cinematic-mode");
       isEarthVisible = true;
-      draw();
-      return;
-    }
 
-    // 🔹 NEW: mark the current step-block as active
-    const block = element.closest(".step-block");
-    document.querySelectorAll(".step-block").forEach(b => {
-      b.classList.remove("is-active");
+      warpTarget = 0;
+      warpFactor = 0;
+      starTargetAlpha = 0;
+      starGlobalAlpha = 0;
+
+      const id = element.id;
+      const view = stepViews[id];
+      if (view) {
+        animateGlobeTo(view.lon, view.lat, 1600);
+        focusLon = view.lon;
+        focusLat = view.lat;
+        activeRegionLabel = element.dataset.region || "";
+      }
+
+
+      const globeFile = element.dataset.globeFile;
+      const chartFile = element.dataset.chartFile;
+      const region = element.dataset.region;
+      const year = +element.dataset.year;
+
+      if (globeFile) {
+        updateYear(globeFile);
+      }
+
+      if (chartFile && region) {
+        const chartData = await d3.csv(chartFile);
+        const chartDiv = block.querySelector(".chart");
+        drawRegionChart(region, chartDiv, chartData, year);
+      }
     });
-    if (block) block.classList.add("is-active");
-
-    // your existing behavior below
-    document.body.classList.remove("cinematic-mode");
-    isEarthVisible = true;
-
-    warpTarget = 0;
-    warpFactor = 0;
-    starTargetAlpha = 0;
-    starGlobalAlpha = 0;
-
-    const id = element.id;
-    const view = stepViews[id];
-    if (view) {
-      animateGlobeTo(view.lon, view.lat, 1600);
-    }
-
-    const globeFile = element.dataset.globeFile;
-    const chartFile = element.dataset.chartFile;
-    const region = element.dataset.region;
-    const year = +element.dataset.year;
-
-    if (globeFile) {
-      updateYear(globeFile);
-    }
-
-    if (chartFile && region) {
-      const chartData = await d3.csv(chartFile);
-      const chartDiv = block.querySelector(".chart");
-      drawRegionChart(region, chartDiv, chartData, year);
-    }
-  })
 });
-
 const intro = document.querySelector(".intro");
 const scrolly = document.getElementById("scrolly");
 
@@ -846,6 +1016,11 @@ function clearWarpTimers() {
 
 function enterStory() {
   if (isInStory || isWarping) return;
+
+  if (hasWarped) {
+    return;
+  }
+
   isInStory = true;
   isWarping = true;
 
@@ -853,14 +1028,16 @@ function enterStory() {
   hasStartedStory = true;
 
   if (firstTime) {
-      lockScroll();   
+    lockScroll();
   }
 
   hideIntroCards();
   clearWarpTimers();
 
-  scrolly.classList.add("visible");
   intro.classList.add("slide-up");
+
+  isEarthVisible = false;
+  draw();
 
   document.body.classList.add("cinematic-mode");
   resizeCanvas();
@@ -871,15 +1048,11 @@ function enterStory() {
     behavior: "auto",
   });
 
-
   initStars();
 
   warpFactor = WARP_IDLE;
   starGlobalAlpha = 1;
   starTargetAlpha = 1;
-
-  isEarthVisible = false;
-  draw();
 
   warpTarget = WARP_BURST;
   const WARP_DURATION = 1300;
@@ -893,6 +1066,7 @@ function enterStory() {
       warpTarget = 0.05;
       starTargetAlpha = 0.3;
 
+      scrolly.classList.add("visible");
       isEarthVisible = true;
       dotAlpha = 0;
       isZooming = true;
@@ -915,32 +1089,27 @@ function enterStory() {
         })
         .on("end", () => {
           isZooming = false;
+          isEarthVisible = true;
           draw();
 
           warpTarget = WARP_IDLE;
           isWarping = false;
 
-          // start fading stars out immediately
           starTargetAlpha = 0;
 
           fadeTimeout = setTimeout(() => {
             showIntroCards();
-            
-          }, 1200); 
+          }, 1200);
         });
-
 
       setTimeout(() => {
         if (!document.body.classList.contains("story-intro-active")) {
           showIntroCards();
         }
       }, ZOOM_DURATION + 200);
-
-
     }, DECEL_DURATION);
   }, WARP_DURATION);
 }
-
 
 function leaveStory() {
   if (isWarping) return;
@@ -963,20 +1132,44 @@ function leaveStory() {
   draw();
 }
 
+const beginBtn = document.getElementById("begin-btn");
+if (beginBtn) {
+  beginBtn.addEventListener("click", () => {
+    enterStory();
+  });
+}
 
-const transitionObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) {
-        enterStory();
-      } else {
-        leaveStory();
-      }
-    });
-  },
-  { threshold: 0.2 }
-);
+const proceedBtn = document.getElementById("proceed-btn");
+if (proceedBtn) {
+  proceedBtn.addEventListener("click", () => {
+    unlockScroll();
 
-transitionObserver.observe(intro);
+    document.body.classList.remove("cinematic-mode");
+    document.body.classList.remove("story-intro-active");
+
+    const introCardsEl = document.getElementById("intro-cards");
+    if (introCardsEl) {
+      introCardsEl.style.display = "none";
+    }
+
+    const firstStepBlock = document.querySelector(
+      ".step-block:not(.ghost-step)"
+    );
+    if (firstStepBlock) {
+      const rect = firstStepBlock.getBoundingClientRect();
+      const offset = window.innerHeight * 0.2;
+      const targetTop = window.pageYOffset + rect.top - offset;
+
+      window.scrollTo({
+        top: targetTop,
+        behavior: "smooth",
+      });
+    }
+  });
+}
 
 
+
+
+lockScroll();
+window.scrollTo(0, 0);

@@ -22,42 +22,73 @@ html, body {
   height: 100%;
   font-family: var(--font-secondary);
 }
-
 body {
   position: relative;
   overflow-x: hidden;
-  background: #020617;
+  /* Make body transparent so it doesn't cover the canvas */
+  background: transparent; 
   color: var(--text-main);
+  margin: 0;
+  min-height: 100vh;
 }
-
-#space-bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  display: block;
-}
-
 
 .intro {
-  transition: transform 1.2s ease, opacity 1.2s ease;
-  background: #f5f7fb;
-  position: relative;
-  z-index: 1;
-  padding: 80px 48px 64px;
+  /* 1. Centering */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+
+  /* 2. Proportions (RESTORING ORIGINAL VALUES) */
+  width: 90%;
   max-width: 880px;
-  margin: 56px auto 96px;
-  min-height: 70vh;
+  
+  /* Restored to 70vh so it feels tall and spacious again */
+  min-height: 70vh;     
+  max-height: 90vh;
+  overflow-y: auto;
+
+  /* 3. Visuals & Spacing */
+  background: #f5f7fb;
+  
+  /* Restored original padding: Top 5rem (~80px), Side 3rem, Bottom 4rem (~64px) */
+  padding: 5rem 3rem 4rem; 
+  
+  border-radius: 32px;
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.35);
+  
+  /* 4. Layout */
   display: flex;
   flex-direction: column;
   justify-content: center;
-  font-size: 1.3rem;
+  
+  /* Restored Font Size */
+  font-size: 1.3rem; 
   line-height: 1.6;
-  border-radius: 32px;
-  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.35);
+
+  transition: 
+    transform 1.2s cubic-bezier(0.7, 0, 0.3, 1), 
+    opacity 1.2s ease;
+}
+
+.intro p {
+  opacity: 0.9;
+  color: var(--text-muted);
+  max-width: 60rem;
+  
+  /* Kept the nice readability line-height you asked for */
+  line-height: 1.8; 
+  
+  /* Reduced bottom margin to pull the "Hyperspace" line up */
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem; /* Reduced from 2rem */
 }
 
 .intro-subline {
-  margin-top: 1.5rem;
+  /* Reduced top margin to pull it closer to paragraph */
+  margin-top: 1rem;      /* Reduced from 1.5rem */
+  
   font-size: 0.98rem;
   color: var(--text-muted);
   font-style: italic;
@@ -65,6 +96,41 @@ body {
   opacity: 0;
   animation: introFade 1s ease forwards;
   animation-delay: 0.6s;
+}
+
+.intro-meta {
+  /* Reduced top margin to pull the pills closer to "Hyperspace" */
+  margin-top: 1.2rem;    /* Reduced from 1.8rem */
+  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-secondary);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Ensure this class exists for the exit animation */
+.intro.slide-up {
+  transform: translate(-50%, -150%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+
+.intro::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+#space-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  display: block;
+}
+body.scroll-locked {
+  overflow: hidden; 
 }
 
 
@@ -111,21 +177,7 @@ body {
   margin-bottom: 1.2rem;
 }
 
-.intro p {
-  opacity: 0.9;
-  color: var(--text-muted);
-  max-width: 60rem;
-}
 
-.intro-meta {
-  margin-top: 1.8rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--font-secondary);
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
 
 .intro-meta-right {
   display: inline-flex;
@@ -191,7 +243,7 @@ body {
 }
 
 .left-panel {
-  width: 50%;
+  width: 55%;
   height: 100vh;
   position: sticky;
   top: 0;
@@ -206,19 +258,19 @@ body {
   height: 100%;
   display: block;
 }
-
 .content-area {
-  width: 50%;
-  /* padding: 60px; */
-  background: rgba(255, 255, 255, 0.001);
-  border-radius: 32px 0 0 32px;
-  box-shadow: var(--shadow-soft);
+  width: 42%;
+  padding: 40px 40px 80px 12px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
   opacity: 1;
   transform: translateY(0);
   transition:
     opacity 600ms ease,
     transform 600ms ease;
 }
+
 
 body.cinematic-mode .content-area {
   opacity: 0;
@@ -239,39 +291,44 @@ body.cinematic-mode .content-area {
   color: var(--accent-main);
 }
 .step {
-  margin: 0 0 16px;
-  padding: 14px 18px;
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 6px 16px;
   background: #ffffff;
   border-radius: 999px;
-  border: 1px solid #dde2ec;
-  font-size: 0.9rem;
-  letter-spacing: 0.12em;
+  border: 1px solid #d4d4d8;
+  border-left-width: 3px;
+  border-left-color: transparent;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #1f7a8c;
+  color: #6b7280;
   transition:
-    background-color 260ms ease,
-    border-color 260ms ease,
-    color 260ms ease,
-    box-shadow 260ms ease;
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
 }
 
-/* When its block is active, emphasize the pill */
 .step-block.is-active .step {
-  background: #e0f2fe;
-  border-color: #38bdf8;
-  color: #0369a1;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
+  background: #f3f4f6;
+  border-color: #cbd5e1;
+  border-left-color: #0ea5e9;
+  color: #111827;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+  transform: translateY(-1px);
 }
 
-/* Stagger chart + text so it feels like a mini “page load” */
-.step-block .chart,
-.step-block .textbox {
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 260ms ease,
-    transform 260ms ease;
+
+.textbox {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #4b5563;
+  max-width: 38rem;
 }
+
 
 .step-block.is-active .chart {
   opacity: 1;
@@ -286,40 +343,36 @@ body.cinematic-mode .content-area {
 }
 
 .step-block {
-  margin-bottom: 120px;
-  padding: 24px 24px 28px;
+  margin-bottom: 80px;
+  padding: 22px 26px 26px;
   border-radius: 22px;
+  max-width: 640px;
+  margin-left: auto;
 
-  background: rgba(248, 250, 252, 0.85);
-  box-shadow: 0 0 0 rgba(15, 23, 42, 0);
+  background: rgba(245, 247, 251, 0.97);
+  border: 1px solid rgba(226, 232, 240, 1);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
 
-  opacity: 0.35;
-  transform: translateY(26px) scale(0.97);
-  filter: blur(0.3px);
+  opacity: 0.55;
+  transform: translateY(18px) scale(0.985);
 
   transition:
-    opacity 340ms ease,
-    transform 340ms cubic-bezier(0.22, 0.9, 0.25, 1.08),
-    box-shadow 340ms ease,
-    background-color 340ms ease,
-    filter 340ms ease;
+    opacity 320ms ease,
+    transform 320ms cubic-bezier(0.22, 0.9, 0.25, 1.08),
+    box-shadow 320ms ease,
+    background-color 260ms ease,
+    border-color 260ms ease;
 }
 
-/* Active step looks like a focused “page” */
 .step-block.is-active {
   opacity: 1;
   transform: translateY(0) scale(1);
-  filter: blur(0);
   background: #ffffff;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  border-color: #d0d7e6;
+  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.18);
 }
 
 
-.textbox {
-  margin-top: 10px;
-  font-size: 0.95rem;
-  color: var(--text-muted);
-}
 .ghost-step {
   height: 100vh;
   margin-bottom: 0;
@@ -333,9 +386,25 @@ body.cinematic-mode .content-area {
   margin-top: 60px;  /* tweak as you like */
 }
 .chart {
-  height: 300px;
-  margin-top: 10px;
+  height: 260px;
 }
+
+.step-block .chart {
+  margin-top: 10px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 24px rgba(148, 163, 184, 0.35);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
 
 
 .intro-meta-left {
@@ -345,17 +414,18 @@ body.cinematic-mode .content-area {
 }
 
 .team-pill {
-  padding: 6px 12px;
+  padding: 6px 14px; /* A bit more padding */
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.8);
-  font-size: 0.8rem;
+  
+  font-size: 0.85rem; /* Increased from 0.8rem */
+  
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
   cursor: default;
-  transition: transform 0.15s ease, box-shadow 0.15s ease,
-              background 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .team-pill:hover {
@@ -547,4 +617,215 @@ body.cinematic-mode #intro-cards {
 body.race-expanded #race-panel-inner {
   height: 60vh;                  
   opacity: 1;
+}
+
+
+/* style.css */
+
+/* Add this to style the play button */
+#race-play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  border: none;
+  background: rgba(148, 163, 184, 0.95); /* Semi-transparent Slate/Gray */
+  color: #0f172a;
+  padding: 18px;
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease, transform 300ms ease, background 150ms ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+}
+
+#race-play-button:hover {
+  background: #cbd5e1; 
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+#race-play-button svg {
+  width: 28px;
+  height: 28px;
+  margin-left: 4px; 
+}
+
+.intro-card.race-paused #race-play-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.primary-btn {
+  background: transparent;
+  color: var(--accent-main);     /* Teal text */
+  border: 1px solid var(--accent-main);
+  padding: 10px 26px;
+  border-radius: 999px;
+  font-family: var(--font-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: none;              /* No shadow by default to keep it flat/subtle */
+}
+
+.primary-btn:hover {
+  background: var(--accent-main);
+  color: #ffffff;                /* White text on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(31, 122, 140, 0.25); /* Soft glow only on hover */
+}
+
+.primary-btn:active {
+  transform: translateY(0);
+}
+.intro-card.race-paused #race-panel-inner {
+  opacity: 0.5;
+}
+
+.intro-btn {
+  position: relative;
+  padding: 12px 34px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+
+  font-family: var(--font-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+
+  /* Calibrated hyperspace gradient */
+  background-image: linear-gradient(135deg, #36c8e4, #3ddad7);
+  color: #ffffff;
+
+  /* Tighter, cleaner glow */
+  box-shadow:
+    0 8px 18px rgba(15, 23, 42, 0.22);
+
+  background-size: 180% 180%;
+  background-position: 0% 50%;
+  transition:
+    transform 160ms ease-out,
+    box-shadow 180ms ease-out,
+    background-position 260ms ease-out;
+}
+.intro-cta {
+  margin-top: 0;         /* Removed margin */
+  margin-left: auto;     /* Pushes button to the far right */
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Outer faint ring for “sci-fi” feel */
+.intro-btn::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at 50% 50%, 
+    rgba(82, 220, 235, 0.35), 
+    transparent 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+/* Hover: more spacey but still elegant */
+.intro-btn:hover {
+  transform: translateY(-3px) scale(1.018);
+  box-shadow:
+    0 16px 32px rgba(15, 23, 42, 0.34),
+    0 10px 22px rgba(0, 0, 0, 0.25);
+  background-position: 100% 50%;
+}
+
+.intro-btn:hover::before {
+  opacity: 0.9;
+  transform: scale(1);
+}
+
+/* Active click */
+.intro-btn:active {
+  transform: translateY(-1px) scale(0.99);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.28);
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1024px), (max-height: 800px) {
+  .intro {
+    padding: 3rem 2rem; 
+  }
+
+  .intro h1 {
+    font-size: 2rem; 
+    margin-bottom: 1.5rem;
+  }
+  
+  .intro p {
+    font-size: 0.95rem; 
+  }
+
+  .intro-meta {
+    margin-top: 1.2rem;
+    flex-direction: row;       /* Force horizontal layout */
+    align-items: center;       /* Vertically align pills and button */
+    justify-content: space-between;
+    flex-wrap: nowrap;         /* Prevent wrapping if possible */
+    gap: 1rem;
+  }
+  
+  /* Ensure pills can shrink if needed, but button stays visible */
+  .intro-meta-left {
+    flex: 1; 
+  }
+
+  .intro-cta {
+    margin-top: 0;
+  }
+}
+
+#proceed-btn {
+  position: absolute;
+  bottom: 4vh;
+  
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  
+  z-index: 100;
+  
+  opacity: 0;
+  pointer-events: none; 
+
+  transition: 
+    opacity 800ms ease 200ms,
+    transform 160ms ease-out,
+    box-shadow 180ms ease-out,
+    background-position 260ms ease-out;
+}
+
+#proceed-btn.visible {
+  opacity: 1;
+  pointer-events: auto; 
+}
+
+.intro-button-row {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
 }
