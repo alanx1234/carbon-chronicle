@@ -643,7 +643,7 @@ function draw() {
       const dy = y - cy;
       if (dx * dx + dy * dy > r * r) return;
 
-      const intensity = Math.min(1, Math.abs(d.co2) / maxVal);
+      const intensity = Math.min(1, d.co2 / maxVal);
       const radius = 1.4 + intensity * 1.7;
       const alpha = 0.25 + intensity * 0.75;
 
@@ -745,7 +745,7 @@ let focusLat = null;
 
 let colorScale = d3
   .scaleLinear()
-  .range(["#38bdf8", "#000000ff", "#f97316"])
+  .range(["#020b1f", "#38bdf8", "#f97316"])
   .clamp(true);
 
 
@@ -754,21 +754,18 @@ function updateYear(csvFile) {
     const yearData = data.map((d) => ({
       lat: +d.lat,
       lon: +d.lon,
-      co2: +d.fco2_delta, // make sure this is the delta column
+      co2: +d.fco2antt,
     }));
 
-    const deltas = yearData
+    const landValues = yearData
+      .filter((d) => d.co2 > 0)
       .map((d) => d.co2)
-      .filter((v) => !isNaN(v))
       .sort(d3.ascending);
 
-    if (deltas.length) {
-      const lo = d3.quantile(deltas, 0.02);
-      const hi = d3.quantile(deltas, 0.98);
-      const maxAbs = Math.max(Math.abs(lo), Math.abs(hi)) || 1e-12;
-
-      // negative change → left color, 0 → middle, positive → right
-      colorScale.domain([-maxAbs, 0, maxAbs]);
+    if (landValues.length) {
+      const q90 = d3.quantile(landValues, 0.9);
+      const q99 = d3.quantile(landValues, 0.99);
+      colorScale.domain([0, q90, q99]);
     }
 
     const binnedData = d3.rollup(
@@ -795,13 +792,14 @@ function updateYear(csvFile) {
 
   d3.csv(csvFile)
     .then((data) => {
+      console.log("Loaded rows:", data.length, "from", csvFile);
       globeCache[csvFile] = data;
       applyGlobeData(data);
     })
-    .catch((err) => console.error("Error loading CSV", csvFile, err));
+    .catch((err) => {
+      console.error("Error loading CSV", csvFile, err);
+    });
 }
-
-
 
 
 const stepViews = {
