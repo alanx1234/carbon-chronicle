@@ -102,7 +102,18 @@
         <div class="step" id="step-1908" data-globe-file="data/1908_co.csv" data-chart-file="data/regions_co2.csv" data-region="Middle East" data-year = "1908">Year 1908</div>
         <div class="chart" id="chart-1908"></div>
         <div class="textbox">
-            <p>Oil drilling</p>
+            <p>In the early 20th century British prospectors discovered oil in Iran and began 
+              the first large-scale drilling projects. The British government bought a 
+              controlling stake in the Anglo-Iranian oil company (AIOC) and by the start of WWI 
+              Iranian oil was Britain’s most important strategic resource. However, this grew 
+              resentment in Iranians as foreign businessmen, engineers, and British investors 
+              hoarded the wealth and lived lavishly while Iran’s local population lived in 
+              poverty. This led to nationalization of Iran’s oil industry by Mohammed Mossadeq – 
+              who was the democratically elected prime minister; he argued that Iran should 
+              begin profiting from its vast oil reserves. However, in 1953 the CIA and British 
+              intelligence orchestrated a coup of this nationalist government for a dictatorship 
+              under the Shah who was friendly and relied heavily on western interests. The CIA 
+              didn’t acknowledge their key involvement until 2013. </p>
         </div>
     </div>
 
@@ -118,7 +129,18 @@
         <div class="step" id="step-1945" data-globe-file="data/1945_co.csv" data-chart-file="data/regions_co2.csv" data-region="Japan" data-year = "1945">Year 1945</div>
         <div class="chart" id="chart-1945"></div>
         <div class="textbox">
-            <p>Atomic bombing on japan </p>
+            <p>The atomic bomb on Japan is a unique event in which destruction was brought about not 
+              for resource extraction but for the cessation of war. During WWII Japan was the last 
+              nation in the Axis power to surrender. The United States had determined that – due to 
+              the resiliency of the Japanese – conventional bombing and ground invasions were not 
+              sufficient. In August of 1945 the world’s first atomic bomb was dropped in Hiroshima, 
+              Japan. Both sides were hoping to do something drastic enough to call for a cease-fire – 
+              or better to surrender. Nuclear testing in the 1940s to 1950s produced unusual isotopes 
+              in the atmosphere – specifically 14C. Various examinations were done that showed the 
+              ratio of 14CO2 to total CO2 rapidly increased during this time. This worldwide public 
+              concern over the danger posed by atmospheric radioactive fallout produced by above 
+              ground nuclear weapons testing led to the Nuclear Test-Ban Treaty signed by the United 
+              States, Soviet Union, and United Kingdom.</p>
         </div>
     </div>
 
@@ -140,6 +162,23 @@
     </div>
 
     <div class="step-block">
+        <div class="step" id="step-1955" data-globe-file="data/1955_co.csv" data-chart-file="data/regions_co2.csv" data-region="Vietnam" data-year = "1955">Year 1955</div>
+        <div class="chart" id="chart-20955"></div>
+        <div class="textbox">
+            <p>The vietnam war grew from the long conflicts between France and Vietnam. 
+              The Geneva Peace Accords was an attempt to resolve these conflicts signed by 
+              France and the communist leaderships of Vietnam – the Soviet Union and the People’s 
+              Republic of China – and stipulated that Vietnam be reunified by a national election. 
+              However, as cold war tensions continued to build, anxiety seeped through the United 
+              States, and unification efforts stalled; the United States became more involved. 
+              This conflict pitted the communist North Vietnam against the government of South 
+              Vietnam and its principal ally the United States. The deliberate mass removal of 
+              vegetation by bombing and chemical defoliants (Agent Orange) sought to eliminate forest 
+              cover and with it the carbon it stored was released.  </p>
+        </div>
+    </div>
+
+    <div class="step-block">
         <div class="step" id="step-2014" data-globe-file="data/2014_co.csv" data-chart-file="data/regions_co2.csv" data-region="Africa" data-year = "2014">Year 2014</div>
         <div class="chart" id="chart-2014"></div>
         <div class="textbox">
@@ -147,8 +186,60 @@
         </div>
     </div>
 
+<div class="conclusion-cta">
+  <button id="conclusion-btn" class="intro-btn">
+    View Conclusion
+  </button>
 </div>
 
+  </div>
+  </div>
+</section>
+
+<section id = "conclusion" class = "outro hidden-outro">
+  <div class = "outro-card">
+    <span class = "intro-label">Looking ahead</span>
+      <h2 class = "outro-title">
+        What can we learn from the past to help with our future.
+      </h2>
+      <p class = "outro-body">
+        Conclusion...
+      </p>
+
+    <div class="conclusion-visual">
+      <div class="conclusion-globe-panel">
+        <canvas id="globe-conclusion"></canvas>
+      </div>
+
+      <div class="conclusion-controls">
+        <p class="outro-body">
+          Explore the globe yourself. Drag to rotate and scrub through the
+          years to see how emissions change.
+        </p>
+
+        <label class="conclusion-year-label">
+          Year <span id="conclusion-year-label">2014</span>
+        </label>
+
+        <input
+          type="range"
+          id="conclusion-year-slider"
+          min="0"
+          max="6"
+          step="1"
+        />
+
+        <div class="conclusion-year-ticks">
+          <span>1880</span>
+          <span>1908</span>
+          <span>1930</span>
+          <span>1945</span>
+          <span>1952</span>
+          <span>1955</span>
+          <span>2014</span>
+        </div>
+      </div>
+    </div>
 
   </div>
 </section>

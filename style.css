@@ -829,3 +829,145 @@ body.race-expanded #race-panel-inner {
   display: flex;
   justify-content: center;
 }
+
+.outro {
+  position: relative;
+  z-index: 2;                 /* above background canvas */
+  padding: 80px 0 120px;
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 23, 42, 0) 0%,
+    rgba(15, 23, 42, 0.9) 35%,
+    rgba(15, 23, 42, 1) 100%
+  );
+  display: flex;
+  justify-content: center;
+}
+
+.hidden-outro {
+  display: none;
+}
+
+.outro-card {
+  width: 90%;
+  max-width: 880px;
+  background: rgba(248, 250, 252, 0.96);
+  border-radius: 32px;
+  padding: 3.5rem 3rem 3rem;
+  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.6);
+  font-family: var(--font-secondary);
+  color: #0f172a;
+}
+
+.outro-title {
+  font-family: var(--font-primary);
+  font-size: 2.1rem;
+  line-height: 1.3;
+  margin: 0 0 1.6rem;
+  position: relative;
+}
+
+.outro-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+  width: 90px;
+  height: 3px;
+  background: var(--accent-soft);
+  border-radius: 999px;
+}
+
+.outro-body {
+  margin: 1.1rem 0 0;
+  font-size: 0.98rem;
+  line-height: 1.8;
+  color: var(--text-muted);
+}
+
+.conclusion-cta {
+  margin: 32px auto 0;
+  padding-bottom: 40px;
+  text-align: center;
+}
+
+.conclusion-cta .intro-btn {
+  margin-top: 0;
+}
+
+/* Mobile tweaks */
+@media (max-width: 900px) {
+  .outro-card {
+    padding: 2.5rem 1.8rem 2.4rem;
+    border-radius: 24px;
+  }
+
+  .outro-title {
+    font-size: 1.7rem;
+  }
+}
+
+.conclusion-visual {
+  margin-top: 2.4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr);
+  gap: 2rem;
+  align-items: center;
+}
+
+.conclusion-globe-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#globe-conclusion {
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.conclusion-controls {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.conclusion-year-label {
+  display: block;
+  margin: 1.2rem 0 0.4rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #0f172a;
+}
+
+#conclusion-year-label {
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
+#conclusion-year-slider {
+  width: 100%;
+}
+
+.conclusion-year-ticks {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+/* Stack on small screens */
+@media (max-width: 900px) {
+  .conclusion-visual {
+    grid-template-columns: 1fr;
+  }
+
+  .conclusion-globe-panel {
+    order: -1;
+  }
+}

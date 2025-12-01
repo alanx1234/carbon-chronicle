@@ -808,7 +808,8 @@ const stepViews = {
   "step-1930": { lon: 5, lat: 50 },
   "step-1945": { lon: 138, lat: 36 },
   "step-1952": { lon: -0, lat: 51 },
-  "step-2014": { lon: -120, lat: 30 },
+  "step-1955": {lon: 108, lat: 14},
+  "step-2014": { lon: 18, lat: 2 },
 };
 
 let activeRotationTween = null;
@@ -1168,8 +1169,261 @@ if (proceedBtn) {
   });
 }
 
+const conclusionBtn = document.getElementById("conclusion-btn");
+const conclusionSection = document.getElementById("conclusion");
 
+if (conclusionBtn && conclusionSection) {
+  conclusionBtn.addEventListener("click", () => {
+    // reveal the conclusion section
+    conclusionSection.classList.remove("hidden-outro");
 
+    // lazy-init globe once it's visible
+    if (!conclusionInitialized) {
+      initConclusionGlobe();
+    } else {
+      resizeConclusionGlobe();
+      drawConclusionGlobe();
+    }
+
+    // scroll to it
+    conclusionSection.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
+}
 
 lockScroll();
 window.scrollTo(0, 0);
+
+// === Conclusion Globe (interactive) ===
+const conclusionCanvas = document.getElementById("globe-conclusion");
+let conclusionCtx = conclusionCanvas ? conclusionCanvas.getContext("2d") : null;
+let conclusionProjection, conclusionPath;
+let conclusionPlotData = [];
+
+let conclusionColorScale = d3
+  .scaleLinear()
+  .range(["#020b1f", "#38bdf8", "#f97316"])
+  .clamp(true);
+
+const conclusionYears = [1880, 1908, 1930, 1945, 1952, 1955, 2014];
+const conclusionYearFiles = {
+  1880: "data/1880_co.csv",
+  1908: "data/1908_co.csv",
+  1930: "data/1930_co.csv",
+  1945: "data/1945_co.csv",
+  1952: "data/1952_co.csv",
+  1955: "data/1955_co.csv",
+  2014: "data/2014_co.csv",
+};
+
+let conclusionInitialized = false;
+let conclusionDragging = false;
+let dragStart = null;
+let rotationStart = null;
+
+function resizeConclusionGlobe() {
+  if (!conclusionCanvas || !conclusionCtx || !countries) return;
+  const rect = conclusionCanvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return; // invisible (hidden-outro)
+
+  const dpr = window.devicePixelRatio || 1;
+  const size = Math.min(rect.width, rect.width); // square
+
+  conclusionCanvas.width = size * dpr;
+  conclusionCanvas.height = size * dpr;
+  conclusionCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  conclusionProjection = d3
+    .geoOrthographic()
+    .clipAngle(90)
+    .rotate([-20, -10])
+    .scale(size / 2.2)
+    .translate([size / 2, size / 2]);
+
+  conclusionPath = d3.geoPath().projection(conclusionProjection).context(conclusionCtx);
+
+  drawConclusionGlobe();
+}
+
+function applyConclusionData(data) {
+  const yearData = data.map((d) => ({
+    lat: +d.lat,
+    lon: +d.lon,
+    co2: +d.fco2antt,
+  }));
+
+  const landValues = yearData
+    .filter((d) => d.co2 > 0)
+    .map((d) => d.co2)
+    .sort(d3.ascending);
+
+  if (landValues.length) {
+    const q90 = d3.quantile(landValues, 0.9);
+    const q99 = d3.quantile(landValues, 0.99);
+    conclusionColorScale.domain([0, q90, q99]);
+  }
+
+  const binnedData = d3.rollup(
+    yearData,
+    (v) => d3.mean(v, (d) => d.co2),
+    (d) => Math.round(d.lat),
+    (d) => Math.round(d.lon)
+  );
+
+  conclusionPlotData = [];
+  binnedData.forEach((lons, lat) => {
+    lons.forEach((co2, lon) => {
+      conclusionPlotData.push({ lat: +lat, lon: +lon, co2 });
+    });
+  });
+
+  drawConclusionGlobe();
+}
+
+function loadConclusionYear(year) {
+  const file = conclusionYearFiles[year];
+  if (!file || !conclusionCanvas) return;
+
+  // update label
+  const labelEl = document.getElementById("conclusion-year-label");
+  if (labelEl) labelEl.textContent = year;
+
+  if (globeCache[file]) {
+    applyConclusionData(globeCache[file]);
+    return;
+  }
+  d3.csv(file).then((data) => {
+    globeCache[file] = data;
+    applyConclusionData(data);
+  });
+}
+
+function drawConclusionGlobe() {
+  if (!conclusionCtx || !conclusionProjection || !countries) return;
+
+  const canvas = conclusionCanvas;
+  conclusionCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const t = conclusionProjection.translate();
+  const cx = t[0];
+  const cy = t[1];
+  const r = conclusionProjection.scale() - 3;
+
+  // ocean
+  conclusionCtx.beginPath();
+  conclusionCtx.arc(cx, cy, r, 0, Math.PI * 2);
+  conclusionCtx.fillStyle = OCEAN_COLOR;
+  conclusionCtx.fill();
+
+  // atmosphere glow
+  const glowGrad = conclusionCtx.createRadialGradient(
+    cx,
+    cy,
+    r * 0.95,
+    cx,
+    cy,
+    r * 1.1
+  );
+  glowGrad.addColorStop(0, ATMOS_INNER);
+  glowGrad.addColorStop(1, ATMOS_OUTER);
+
+  conclusionCtx.beginPath();
+  conclusionCtx.arc(cx, cy, r * 1.1, 0, Math.PI * 2);
+  conclusionCtx.fillStyle = glowGrad;
+  conclusionCtx.fill();
+
+  // dots
+  const domain = conclusionColorScale.domain();
+  const maxVal = domain[domain.length - 1] || 1;
+
+  conclusionPlotData.forEach((d) => {
+    const coords = conclusionProjection([d.lon, d.lat]);
+    if (!coords) return;
+    const x = coords[0];
+    const y = coords[1];
+    const dx = x - cx;
+    const dy = y - cy;
+    if (dx * dx + dy * dy > r * r) return;
+
+    const intensity = Math.min(1, d.co2 / maxVal);
+    const radius = 1.3 + intensity * 1.7;
+    const alpha = 0.25 + intensity * 0.75;
+
+    conclusionCtx.beginPath();
+    conclusionCtx.arc(x, y, radius, 0, Math.PI * 2);
+    conclusionCtx.fillStyle = conclusionColorScale(d.co2);
+    conclusionCtx.globalAlpha = alpha;
+    conclusionCtx.fill();
+  });
+
+  conclusionCtx.globalAlpha = 1;
+
+  // graticule + land
+  conclusionCtx.beginPath();
+  conclusionCtx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+  conclusionCtx.lineWidth = 0.4;
+  conclusionPath(graticule);
+  conclusionCtx.stroke();
+
+  conclusionCtx.fillStyle = "rgba(0,0,0,0)";
+  conclusionCtx.strokeStyle = "rgba(148, 163, 184, 0.85)";
+  conclusionCtx.lineWidth = 0.6;
+  conclusionCtx.beginPath();
+  conclusionPath(countries);
+  conclusionCtx.fill();
+  conclusionCtx.stroke();
+}
+
+function initConclusionGlobe() {
+  if (!conclusionCanvas || !countries) return;
+
+  resizeConclusionGlobe();
+
+  // set up slider mapping indices -> years
+  const slider = document.getElementById("conclusion-year-slider");
+  const defaultYear = 2014;
+  if (slider) {
+    slider.min = 0;
+    slider.max = conclusionYears.length - 1;
+    slider.value = String(conclusionYears.indexOf(defaultYear));
+
+    slider.addEventListener("input", () => {
+      const idx = +slider.value;
+      const year = conclusionYears[idx];
+      loadConclusionYear(year);
+    });
+  }
+
+  // default year
+  loadConclusionYear(defaultYear);
+
+  // drag-to-rotate
+  conclusionCanvas.addEventListener("mousedown", (e) => {
+    conclusionDragging = true;
+    dragStart = [e.clientX, e.clientY];
+    rotationStart = conclusionProjection.rotate();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!conclusionDragging || !rotationStart) return;
+    const dx = e.clientX - dragStart[0];
+    const dy = e.clientY - dragStart[1];
+
+    const sensitivity = 0.3;
+    const newRotate = [
+      rotationStart[0] + dx * sensitivity,
+      rotationStart[1] - dy * sensitivity,
+      rotationStart[2],
+    ];
+    conclusionProjection.rotate(newRotate);
+    drawConclusionGlobe();
+  });
+
+  window.addEventListener("mouseup", () => {
+    conclusionDragging = false;
+  });
+
+  conclusionInitialized = true;
+}
