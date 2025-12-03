@@ -1338,6 +1338,75 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     .text(regionName);
 }
 
+async function handleStepEnter(element) {
+  if (!element) return;
+
+  const block = element.closest(".step-block");
+  document.querySelectorAll(".step-block").forEach((b) => {
+    b.classList.remove("is-active");
+  });
+  if (block) block.classList.add("is-active");
+
+  collapseRacePanel();
+  hideIntroCards();
+  document.body.classList.remove("cinematic-mode");
+
+  if (!isWarping && !isZooming) {
+    resizeCanvas();
+  }
+
+  isEarthVisible = true;
+
+  const id = element.id;
+  const view = stepViews[id];
+  if (view) {
+    // Rotate to center this region, but keep globe size fixed
+    animateGlobeTo(view.lon, view.lat, 1600);
+    focusLon = view.lon;
+    focusLat = view.lat;
+    activeRegionLabel = element.dataset.region || "";
+  }
+
+  // Track active step for the toggle
+  currentStepElement = element;
+
+  // Show or hide year toggle depending on whether this step has an "after" file
+  if (yearToggleEl) {
+    if (element.dataset.globeFileAfter) {
+      yearToggleEl.classList.add("visible");
+    } else {
+      yearToggleEl.classList.remove("visible");
+      // Reset mode to event when we enter a step with no +5y data (like 2014)
+      currentYearMode = "event";
+      yearToggleButtons.forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.mode === "event");
+      });
+    }
+  }
+
+  // Ensure the shared color domain (event +5y) is computed for this step
+  await ensureStepColorDomain(element);
+
+  // Pick appropriate file based on current mode
+  const globeFile = getGlobeFileForStep(element);
+  const chartFile = element.dataset.chartFile;
+  const region = element.dataset.region;
+  const year = +element.dataset.year;
+
+  if (globeFile) {
+    updateYear(globeFile);
+  }
+
+  if (chartFile && region) {
+    const chartData = await d3.csv(chartFile);
+    const chartDiv = block.querySelector(".chart");
+    drawRegionChart(region, chartDiv, chartData, year);
+  }
+}
+
+
+
+
 d3.json("data/countries.json").then((world) => {
   countries = topojson.feature(world, world.objects.countries);
   
@@ -1354,74 +1423,15 @@ d3.json("data/countries.json").then((world) => {
       offset: 0.2,
     })
     .onStepEnter(async ({ element }) => {
-        if (!isInStory || isWarping || isZooming) {
-          return;
-        }
-        const block = element.closest(".step-block");
-        document.querySelectorAll(".step-block").forEach((b) => {
-          b.classList.remove("is-active");
-        });
-        if (block) block.classList.add("is-active");
-
-        collapseRacePanel();
-        hideIntroCards();
-        document.body.classList.remove("cinematic-mode");
-
-        if (!isWarping && !isZooming) {
-          resizeCanvas();
-        }
-
-        isEarthVisible = true;
-
-        const id = element.id;
-        const view = stepViews[id];
-        if (view) {
-          // Rotate to center this region, but keep globe size fixed
-          animateGlobeTo(view.lon, view.lat, 1600);
-
-          focusLon = view.lon;
-          focusLat = view.lat;
-          activeRegionLabel = element.dataset.region || "";
-        }
-
-
-        // Track active step for the toggle
-        currentStepElement = element;
-
-        // Show or hide year toggle depending on whether this step has an "after" file
-        if (yearToggleEl) {
-          if (element.dataset.globeFileAfter) {
-            yearToggleEl.classList.add("visible");
-          } else {
-            yearToggleEl.classList.remove("visible");
-            // Reset mode to event when we enter a step with no +10y data (like 2014)
-            currentYearMode = "event";
-            yearToggleButtons.forEach((btn) => {
-              btn.classList.toggle("active", btn.dataset.mode === "event");
-            });
-          }
-        }
-
-        // Ensure the shared color domain (event +10y) is computed for this step
-        await ensureStepColorDomain(element);
-
-        // Pick appropriate file based on current mode
-        const globeFile = getGlobeFileForStep(element);
-        const chartFile = element.dataset.chartFile;
-        const region = element.dataset.region;
-        const year = +element.dataset.year;
-
-        if (globeFile) {
-          updateYear(globeFile);
-        }
-
-
-        if (chartFile && region) {
-          const chartData = await d3.csv(chartFile);
-          const chartDiv = block.querySelector(".chart");
-          drawRegionChart(region, chartDiv, chartData, year);
-        }
+      if (!isInStory || isWarping || isZooming) {
+        return;
+      }
+      await handleStepEnter(element);
     });
+    window.addEventListener("resize", () => {
+      scroller.resize();
+    });
+
 });
 const intro = document.querySelector(".intro");
 const scrolly = document.getElementById("scrolly");
@@ -1594,9 +1604,22 @@ if (proceedBtn) {
         top: targetTop,
         behavior: "smooth",
       });
+
+      // *** NEW: force-activate the first step so it always highlights ***
+      const firstStep = firstStepBlock.querySelector(".step");
+      if (firstStep) {
+        // Small timeout so we’re roughly at the right scroll position
+        setTimeout(() => {
+          // Only run if we’re actually in the story and not warping
+          if (isInStory && !isWarping && !isZooming) {
+            handleStepEnter(firstStep);
+          }
+        }, 300);
+      }
     }
   });
 }
+
 
 const yearToggleEl = document.getElementById("year-toggle");
 const yearToggleButtons = yearToggleEl
