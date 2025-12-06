@@ -1706,7 +1706,7 @@ function playYearSequence(onComplete) {
   // 0.5s hold on 2025 before any shuffling
   const PRE_SCRAMBLE_HOLD = 500; // ms to pause on 2025
   const SCRAMBLE_DURATION = 1500; // ms of random digits
-  const HOLD_FINAL_DURATION = 1300; // ms to hold on 1850
+  const HOLD_FINAL_DURATION = 1400; // ms to hold on 1850
   const TICK = 60; // how fast digits flicker
 
   const digits = "0123456789";
@@ -1817,7 +1817,7 @@ function enterStory() {
   // --- TIMING KNOBS ---
   const WARP_DURATION = 1000; // initial burst
   const DECEL_DURATION = 800; // delay before we start the glide
-  const GLIDE_BEFORE_FADE = 700; // stars still visible but slower
+  const GLIDE_BEFORE_FADE = 800; // stars still visible but slower
   const STAR_FADE_DURATION = 700; // time stars take to fade to 0
   const POST_FADE_DELAY = 200; // time sitting on black before year gate
   const ZOOM_DURATION = 700;
