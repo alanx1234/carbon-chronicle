@@ -1277,164 +1277,224 @@ function animateGlobeTo(lon, lat, duration = 1600) {
 
 
 
+
 function drawRegionChart(regionName, chartDiv, data, eventYear) {
+  // Clear any previous chart in this container
   chartDiv.innerHTML = "";
 
+  // --------- Prepare data ----------
   const parsedData = data.map((d) => ({
-    time: +d.year,
-    date: new Date(+d.year, 0, 1),
+    year: +d.year,
     value: +d[regionName],
   }));
 
-  let innerW = chartDiv.clientWidth;
-  let innerH = chartDiv.clientHeight;
-  if (!innerW || innerW <= 0) innerW = 400;
-  if (!innerH || innerH <= 0) innerH = 220;
+  // sanity: filter out anything weird
+  const cleaned = parsedData.filter(
+    (d) => Number.isFinite(d.year) && Number.isFinite(d.value)
+  );
+  if (!cleaned.length) {
+    console.warn("[regions] no valid data for region", regionName);
+    return;
+  }
 
-  // 1. INCREASED LEFT MARGIN (Prevents label overlap)
-  const margin = { top: 20, right: 20, bottom: 40, left: 65 };
-  const width = innerW - margin.left - margin.right;
-  const height = innerH - margin.top - margin.bottom;
+  // --------- Dimensions ----------
+  const containerWidth = chartDiv.clientWidth || 500;
+  const svgHeight = 260;
 
+  const margin = { top: 24, right: 20, bottom: 36, left: 60 };
+  const width = containerWidth - margin.left - margin.right;
+  const height = svgHeight - margin.top - margin.bottom;
+
+  // --------- Create SVG ----------
   const svg = d3
     .select(chartDiv)
     .append("svg")
-    .attr("viewBox", `0 0 ${innerW} ${innerH}`)
+    .attr("width", containerWidth)
+    .attr("height", svgHeight)
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // --- SCALES ---
+  // --------- Scales ----------
   const x = d3
-    .scaleTime()
-    .domain(d3.extent(parsedData, (d) => d.date))
+    .scaleLinear()
+    .domain(d3.extent(cleaned, (d) => d.year))
     .range([0, width]);
 
   const y = d3
     .scaleLinear()
-    .domain([0, d3.max(parsedData, (d) => d.value)])
+    .domain([0, d3.max(cleaned, (d) => d.value) * 1.05])
     .nice()
     .range([height, 0]);
 
-  // --- GRIDLINES (Newspaper Style) ---
-  // This makes it look like a technical drawing
-  const yGrid = d3.axisLeft(y).tickSize(-width).tickFormat("").ticks(5);
+  // --------- Gridlines ----------
+  const yGrid = d3
+    .axisLeft(y)
+    .ticks(5)
+    .tickSize(-width)
+    .tickFormat("");
 
   svg
     .append("g")
     .attr("class", "grid")
-    .attr("opacity", 0.1) // Very faint
     .call(yGrid)
     .selectAll("line")
     .attr("stroke", "#000")
-    .attr("stroke-dasharray", "2,2"); // Dotted lines
+    .attr("stroke-opacity", 0.12)
+    .attr("stroke-dasharray", "2,2");
 
-  // --- AXES ---
-  const xAxis = d3.axisBottom(x).ticks(6);
-  const yAxis = d3.axisLeft(y).ticks(5).tickFormat(d3.format(".2s")); // "1.2k" format
+  // --------- Axes ----------
+  const xAxis = d3.axisBottom(x).ticks(6).tickFormat(d3.format("d"));
+  const yAxis = d3.axisLeft(y).ticks(5).tickFormat(d3.format(".2s"));
 
-  svg.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
+  svg
+    .append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(xAxis);
 
   svg.append("g").call(yAxis);
 
-  // Style the axis lines to blend with paper
   svg.selectAll(".domain, .tick line").attr("stroke", "#444");
   svg.selectAll(".tick text").attr("fill", "#444");
 
-  // --- YOUR LABELS (Restored) ---
-
-  // Y-Axis Label
+  // Axis labels
   svg
     .append("text")
     .attr("class", "axis-label")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2)
-    .attr("y", -margin.left + 15) // Adjusted position
+    .attr("y", -margin.left + 16)
     .attr("text-anchor", "middle")
-    .text("Carbon Emissions (MtC/year)"); // Slightly shortened for fit, or keep original
+    .text("Carbon Emissions (MtC/year)");
 
-  // X-Axis Label
   svg
     .append("text")
     .attr("class", "axis-label")
     .attr("x", width / 2)
-    .attr("y", height + margin.bottom - 5)
+    .attr("y", height + margin.bottom - 6)
     .attr("text-anchor", "middle")
     .text("Year");
 
-  // --- THE LINES (Updated Colors) ---
+  // --------- Lines ----------
   const line = d3
     .line()
-    .x((d) => x(d.date))
+    .x((d) => x(d.year))
     .y((d) => y(d.value))
-    .curve(d3.curveMonotoneX); // Smooths jagged edges
+    .curve(d3.curveMonotoneX);
 
-  const preEvent = parsedData.filter((d) => d.time <= eventYear);
-  const postEvent = parsedData.filter((d) => d.time >= eventYear - 1); // Overlap to connect
+  const preEvent = cleaned.filter((d) => d.year <= eventYear);
+  const postEvent = cleaned.filter((d) => d.year >= eventYear);
 
-  // "History" Line -> Dark Charcoal (Ink)
+  // "History" line (before event)
   svg
     .append("path")
     .datum(preEvent)
     .attr("fill", "none")
     .attr("stroke", "#2c2c2c")
     .attr("stroke-width", 2)
-    .attr("d", line)
-    // Add the filter we added to HTML earlier
-    .style("filter", "url(#ink-bleed)");
+    .attr("d", line);
 
-  // "Future" Line -> Muted Red (Warning Ink)
+  // "Future" line (after event)
   svg
     .append("path")
     .datum(postEvent)
     .attr("fill", "none")
     .attr("stroke", "#b91c1c")
     .attr("stroke-width", 2)
-    .attr("stroke-dasharray", "4,2") // Dashed to show uncertainty/change
-    .attr("d", line)
-    .style("filter", "url(#ink-bleed)");
+    .attr("stroke-dasharray", "4,2")
+    .attr("d", line);
 
-  // Optional: Add the event dot back
-  const eventPoint = parsedData.find((d) => d.time === eventYear);
+  // Event dot
+  const eventPoint = cleaned.find((d) => d.year === eventYear);
   if (eventPoint) {
     svg
       .append("circle")
-      .attr("cx", x(eventPoint.date))
+      .attr("cx", x(eventPoint.year))
       .attr("cy", y(eventPoint.value))
       .attr("r", 4)
-      .attr("fill", "#f7f1e1") // Paper color
+      .attr("fill", "#f7f1e1")
       .attr("stroke", "#2c2c2c")
       .attr("stroke-width", 2);
   }
 }
 async function initAllRegionCharts() {
   const steps = document.querySelectorAll(".step[data-chart-file]");
+  console.log("[regions] found steps:", steps.length);
+
   if (!steps.length) return;
 
-  // cache per chart file so we only load each CSV once
   const fileCache = {};
 
   for (const step of steps) {
-    const chartFile = step.dataset.chartFile;
+    // Read attributes off the step
+    let chartFile = step.dataset.chartFile;
     const region = step.dataset.region;
-    const year = +step.dataset.year;
+    const year   = +step.dataset.year;
 
-    if (!chartFile || !region) continue;
+    console.log("[regions] step:", {
+      id: step.id,
+      chartFile,
+      region,
+      year,
+    });
 
-    if (!fileCache[chartFile]) {
-      fileCache[chartFile] = await d3.csv(chartFile);
+    if (!chartFile || !region) {
+      console.warn("[regions] skipping step – missing chartFile or region");
+      continue;
     }
+
+    // DEBUG: force chartFile if needed
+    // If your file is actually at the root, uncomment this line:
+    // chartFile = "regions_co2.csv";
+
+    // Load + cache the CSV
+    if (!fileCache[chartFile]) {
+      console.log("[regions] loading CSV:", chartFile);
+      try {
+        fileCache[chartFile] = await d3.csv(chartFile);
+        console.log(
+          "[regions] loaded",
+          fileCache[chartFile].length,
+          "rows from",
+          chartFile
+        );
+      } catch (err) {
+        console.error("[regions] FAILED to load CSV", chartFile, err);
+        continue; // don’t try to draw if data failed to load
+      }
+    }
+
     const data = fileCache[chartFile];
 
     const block = step.closest(".step-block");
-    if (!block) continue;
+    if (!block) {
+      console.warn("[regions] no parent .step-block for step", step.id);
+      continue;
+    }
 
     const chartDiv = block.querySelector(".chart");
-    if (!chartDiv || chartDiv.dataset.initialized === "true") continue;
+    if (!chartDiv) {
+      console.warn("[regions] no .chart found inside step-block for", step.id);
+      continue;
+    }
 
+    if (chartDiv.dataset.initialized === "true") {
+      console.log("[regions] chart already initialized for", region);
+      continue;
+    }
+
+    console.log(
+      "[regions] drawing chart:",
+      region,
+      "rows:",
+      data.length,
+      "eventYear:",
+      year
+    );
     drawRegionChart(region, chartDiv, data, year);
     chartDiv.dataset.initialized = "true";
   }
 }
+
 
 
 async function handleStepEnter(element) {
