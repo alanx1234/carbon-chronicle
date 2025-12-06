@@ -1820,7 +1820,7 @@ function enterStory() {
   const GLIDE_BEFORE_FADE = 700; // stars still visible but slower
   const STAR_FADE_DURATION = 700; // time stars take to fade to 0
   const POST_FADE_DELAY = 200; // time sitting on black before year gate
-  const ZOOM_DURATION = 1200;
+  const ZOOM_DURATION = 700;
 
   // 1) Burst warp phase
   warpTimeout = setTimeout(() => {
@@ -1865,7 +1865,7 @@ function enterStory() {
 
               d3.transition()
                 .duration(ZOOM_DURATION)
-                .ease(d3.easeCubicInOut)
+                .ease(d3.easeCubicOut)
                 .tween("zoom-in", () => {
                   const interpScale = d3.interpolate(startScale, endScale);
                   return (t) => {
