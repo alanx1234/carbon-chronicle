@@ -244,6 +244,7 @@ function initBarChartRace() {
   const innerWidth = racePanelInner.clientWidth;
   const innerHeight = racePanelInner.clientHeight;
 
+
   const width = innerWidth - margin.left - margin.right;
   const height = innerHeight - margin.top - margin.bottom;
 
@@ -1278,18 +1279,24 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     value: +d[regionName],
   }));
 
-  const margin = { top: 24, right: 30, bottom: 40, left: 70 };
-  const width = chartDiv.clientWidth - margin.left - margin.right;
-  const height = chartDiv.clientHeight - margin.top - margin.bottom;
+  let innerW = chartDiv.clientWidth;
+  let innerH = chartDiv.clientHeight;
+  if (!innerW || innerW <= 0) innerW = 400;
+  if (!innerH || innerH <= 0) innerH = 220;
+
+  // 1. INCREASED LEFT MARGIN (Prevents label overlap)
+  const margin = { top: 20, right: 20, bottom: 40, left: 65 };
+  const width = innerW - margin.left - margin.right;
+  const height = innerH - margin.top - margin.bottom;
 
   const svg = d3
     .select(chartDiv)
     .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr("viewBox", `0 0 ${innerW} ${innerH}`)
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
+  // --- SCALES ---
   const x = d3
     .scaleTime()
     .domain(d3.extent(parsedData, (d) => d.date))
@@ -1298,63 +1305,130 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
   const y = d3
     .scaleLinear()
     .domain([0, d3.max(parsedData, (d) => d.value)])
+    .nice()
     .range([height, 0]);
 
-  const yAxis = d3.axisLeft(y).tickFormat(d3.format(".2e"));
-  const xAxis = d3.axisBottom(x);
+  // --- GRIDLINES (Newspaper Style) ---
+  // This makes it look like a technical drawing
+  const yGrid = d3.axisLeft(y).tickSize(-width).tickFormat("").ticks(5);
+
+  svg
+    .append("g")
+    .attr("class", "grid")
+    .attr("opacity", 0.1) // Very faint
+    .call(yGrid)
+    .selectAll("line")
+    .attr("stroke", "#000")
+    .attr("stroke-dasharray", "2,2"); // Dotted lines
+
+  // --- AXES ---
+  const xAxis = d3.axisBottom(x).ticks(6);
+  const yAxis = d3.axisLeft(y).ticks(5).tickFormat(d3.format(".2s")); // "1.2k" format
+
+  svg.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
 
   svg.append("g").call(yAxis);
-  svg
-  .append("text")
-  .attr("class", "axis-label")
-  .attr("transform", "rotate(-90)")
-  .attr("x", -height / 2)
-  .attr("y", -margin.left + 16)  // tweak 16 if it’s too close/far
-  .attr("text-anchor", "middle")
-  .attr("fill", "#0f172a")
-  .text("Carbon Emissions in Megatonnes");
-  svg.append("g").attr("transform", `translate(0,${height})`).call(xAxis);
-  svg
-  .append("text")
-  .attr("class", "axis-label")
-  .attr("x", width / 2)
-  .attr("y", height + margin.bottom - 6)
-  .attr("text-anchor", "middle")
-  .attr("fill", "#0f172a")
-  .text("Year");
 
+  // Style the axis lines to blend with paper
+  svg.selectAll(".domain, .tick line").attr("stroke", "#444");
+  svg.selectAll(".tick text").attr("fill", "#444");
 
+  // --- YOUR LABELS (Restored) ---
+
+  // Y-Axis Label
+  svg
+    .append("text")
+    .attr("class", "axis-label")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height / 2)
+    .attr("y", -margin.left + 15) // Adjusted position
+    .attr("text-anchor", "middle")
+    .text("Carbon Emissions (MtC/year)"); // Slightly shortened for fit, or keep original
+
+  // X-Axis Label
+  svg
+    .append("text")
+    .attr("class", "axis-label")
+    .attr("x", width / 2)
+    .attr("y", height + margin.bottom - 5)
+    .attr("text-anchor", "middle")
+    .text("Year");
+
+  // --- THE LINES (Updated Colors) ---
   const line = d3
     .line()
     .x((d) => x(d.date))
-    .y((d) => y(d.value));
+    .y((d) => y(d.value))
+    .curve(d3.curveMonotoneX); // Smooths jagged edges
 
   const preEvent = parsedData.filter((d) => d.time <= eventYear);
-  const postEvent = parsedData.filter((d) => d.time >= eventYear);
+  const postEvent = parsedData.filter((d) => d.time >= eventYear - 1); // Overlap to connect
 
+  // "History" Line -> Dark Charcoal (Ink)
   svg
     .append("path")
     .datum(preEvent)
     .attr("fill", "none")
-    .attr("stroke", "blue")
+    .attr("stroke", "#2c2c2c")
     .attr("stroke-width", 2)
-    .attr("d", line);
+    .attr("d", line)
+    // Add the filter we added to HTML earlier
+    .style("filter", "url(#ink-bleed)");
 
+  // "Future" Line -> Muted Red (Warning Ink)
   svg
     .append("path")
     .datum(postEvent)
     .attr("fill", "none")
-    .attr("stroke", "red")
+    .attr("stroke", "#b91c1c")
     .attr("stroke-width", 2)
-    .attr("d", line);
+    .attr("stroke-dasharray", "4,2") // Dashed to show uncertainty/change
+    .attr("d", line)
+    .style("filter", "url(#ink-bleed)");
 
-  svg
-    .append("text")
-    .attr("x", width / 2)
-    .attr("y", -5)
-    .attr("text-anchor", "middle")
-    .text(regionName);
+  // Optional: Add the event dot back
+  const eventPoint = parsedData.find((d) => d.time === eventYear);
+  if (eventPoint) {
+    svg
+      .append("circle")
+      .attr("cx", x(eventPoint.date))
+      .attr("cy", y(eventPoint.value))
+      .attr("r", 4)
+      .attr("fill", "#f7f1e1") // Paper color
+      .attr("stroke", "#2c2c2c")
+      .attr("stroke-width", 2);
+  }
 }
+async function initAllRegionCharts() {
+  const steps = document.querySelectorAll(".step[data-chart-file]");
+  if (!steps.length) return;
+
+  // cache per chart file so we only load each CSV once
+  const fileCache = {};
+
+  for (const step of steps) {
+    const chartFile = step.dataset.chartFile;
+    const region = step.dataset.region;
+    const year = +step.dataset.year;
+
+    if (!chartFile || !region) continue;
+
+    if (!fileCache[chartFile]) {
+      fileCache[chartFile] = await d3.csv(chartFile);
+    }
+    const data = fileCache[chartFile];
+
+    const block = step.closest(".step-block");
+    if (!block) continue;
+
+    const chartDiv = block.querySelector(".chart");
+    if (!chartDiv || chartDiv.dataset.initialized === "true") continue;
+
+    drawRegionChart(region, chartDiv, data, year);
+    chartDiv.dataset.initialized = "true";
+  }
+}
+
 
 async function handleStepEnter(element) {
   if (!element) return;
@@ -1415,13 +1489,97 @@ async function handleStepEnter(element) {
     updateYear(globeFile);
   }
 
+
   if (chartFile && region) {
-    const chartData = await d3.csv(chartFile);
     const chartDiv = block.querySelector(".chart");
-    drawRegionChart(region, chartDiv, chartData, year);
+    if (chartDiv && chartDiv.dataset.initialized !== "true") {
+      const chartData = await d3.csv(chartFile);
+      drawRegionChart(region, chartDiv, chartData, year);
+      chartDiv.dataset.initialized = "true";
+    }
   }
 }
 
+let lastStepBlock = null;
+let hasShownFirstPage = false;
+
+function triggerPageFlip(prevBlock, nextBlock, direction) {
+  if (!nextBlock) return;
+
+  const nextSheet = nextBlock.querySelector(".newspaper-sheet");
+  if (!nextSheet) return;
+
+  const forward = direction === "down";
+
+  // --- FIRST TIME WE EVER SHOW A NEWSPAPER PAGE ---
+  // or if Scrollama re-fires on the same block.
+  if (!hasShownFirstPage || !prevBlock || prevBlock === nextBlock) {
+    nextSheet.classList.remove(
+      "page-flip-in-forward",
+      "page-flip-in-back",
+      "page-flip-out-forward",
+      "page-flip-out-back"
+    );
+    nextSheet.classList.add("page-current");
+    hasShownFirstPage = true;
+    lastStepBlock = nextBlock;
+    return; // <- no animation
+  }
+
+  // Clean up any old animation classes on the incoming sheet
+  nextSheet.classList.remove(
+    "page-flip-in-forward",
+    "page-flip-in-back",
+    "page-flip-out-forward",
+    "page-flip-out-back"
+  );
+
+  // Mark this as the current page
+  nextSheet.classList.add("page-current");
+
+  // Animate the previous page flipping away
+  if (prevBlock && prevBlock !== nextBlock) {
+    const prevSheet = prevBlock.querySelector(".newspaper-sheet");
+    if (prevSheet) {
+      prevSheet.classList.remove(
+        "page-flip-in-forward",
+        "page-flip-in-back",
+        "page-current"
+      );
+
+      const outClass = forward ? "page-flip-out-forward" : "page-flip-out-back";
+
+      prevSheet.classList.add(outClass);
+
+      prevSheet.addEventListener(
+        "animationend",
+        () => {
+          prevSheet.classList.remove(
+            outClass,
+            "page-flip-in-forward",
+            "page-flip-in-back"
+          );
+        },
+        { once: true }
+      );
+    }
+  }
+
+  // Animate the new page flipping in
+  const inClass = forward ? "page-flip-in-forward" : "page-flip-in-back";
+  nextSheet.classList.add(inClass);
+
+  nextSheet.addEventListener(
+    "animationend",
+    () => {
+      nextSheet.classList.remove("page-flip-in-forward", "page-flip-in-back");
+      // keep page-current
+    },
+    { once: true }
+  );
+
+  lastStepBlock = nextBlock;
+}
 
 
 
@@ -1437,18 +1595,41 @@ d3.json("data/countries.json").then((world) => {
 
   scroller
     .setup({
-      step: ".step",
-      offset: 0.2,
+      step: ".step-block.newspaper-page",
+      offset: 0.5,
     })
-    .onStepEnter(async ({ element }) => {
+    .onStepEnter(async ({ element, index, direction }) => {
       if (!isInStory || isWarping || isZooming) {
         return;
       }
-      await handleStepEnter(element);
+
+      // Trigger page flip animation between last and current blocks
+      triggerPageFlip(lastStepBlock, element, direction || "down");
+      lastStepBlock = element;
+
+      // Your existing globe / chart handling
+      const stepEl = element.querySelector(".step");
+      if (stepEl) {
+        await handleStepEnter(stepEl);
+      }
     });
-    window.addEventListener("resize", () => {
-      scroller.resize();
-    });
+
+
+  window.addEventListener("resize", () => {
+    scroller.resize();
+  });
+
+  // charts always-on
+  initAllRegionCharts();
+
+  const firstBlock = document.querySelector(".step-block.newspaper-page");
+  if (firstBlock) {
+    const firstSheet = firstBlock.querySelector(".newspaper-sheet");
+    if (firstSheet) {
+      firstSheet.classList.add("page-current");
+      lastStepBlock = firstBlock;
+    }
+  }
 
 });
 const intro = document.querySelector(".intro");
@@ -1714,6 +1895,7 @@ if (conclusionBtn && conclusionSection) {
 
     // 4) Make sure cinematic-mode is off
     document.body.classList.remove("cinematic-mode");
+    
 
     // 5) Scroll to the conclusion section
     conclusionSection.scrollIntoView({

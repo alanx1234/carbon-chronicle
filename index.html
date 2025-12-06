@@ -101,11 +101,73 @@
 
   <!-- You can put steps ANYWHERE below (center, right, stacked, etc.) -->
   <div class="content-area">
+    <div class="step-block newspaper-page">
+      <div class="newspaper-sheet">
+        <!-- 1. Masthead -->
+        <header class="np-masthead">
+          <div class="np-masthead-title">THE CARBON CHRONICLE</div>
+          <div class="np-masthead-rule"></div>
+        </header>
+
+        <!-- 2. Dateline + “step pill” -->
+        <div class="np-dateline-row">
+          <div class="step"
+              id="step-1880"
+              data-globe-file="data/1880_co.csv"
+              data-globe-file-after="data/1880_co_after.csv"
+              data-chart-file="data/regions_co2.csv"
+              data-region="Africa"
+              data-year="1880">
+              AFRICA · <span class="np-dateline-year">1880</span>
+          </div>
+          <div class="np-dateline-right">Colonial extraction</div>
+        </div>
+
+        <!-- 3. Headline + subhead -->
+        <div class="np-headline-block">
+          <h2 class="np-headline">Extracted, but not industrialized.</h2>
+          <p class="np-subhead">
+            Colonial economies mined Africa’s forests and minerals, but the emissions spike
+            shows up later in Europe and the United States.
+          </p>
+        </div>
+
+        <!-- 4. Figure (chart) -->
+        <figure class="np-figure">
+          <div class="chart" id="chart-1880"></div>
+          <figcaption class="np-figure-caption">
+            <strong>Fig. 1</strong> — Africa’s recorded fossil-fuel CO₂ emissions (MtC/year) stay low compared to
+            the regions burning its resources.
+          </figcaption>
+        </figure>
+
+        <!-- 5. Body columns -->
+        <div class="np-body">
+          <p class="lead-paragraph">Global powers have taken advantage of Africa’s resources for centuries.
+            During the late 19th century, the Industrial Revolution fueled global demand 
+            for diamonds, rubber, and other minerals, driving intensive mining and plantation 
+            economies. Much of this activity relied on clearing rainforests, which not only 
+            released carbon from land use and farming, but also destroyed a major carbon sink.
+            In the chart, you can see that Africa’s recorded carbon emissions rise more slowly 
+            than other regions that profitted from its resources such as the United States and 
+            Western Europe, reflecting limited local industrialization. It’s only in the 
+            post–World War II period, as economies begin to develop and energy use grows, that 
+            Africa’s emissions start to climb more sharply.</p>
+          
+        </div>
+
+        <!-- 6. Footer -->
+        <footer class="np-footer">
+          <span class="np-footer-left">Page 3</span>
+          <span class="np-footer-right">Africa · Emissions & Extraction</span>
+        </footer>
+      </div>
+    </div>
+  <!-- 
     <div class="step-block">
         <div class="step" id="step-1880" data-globe-file="data/1880_co.csv" data-globe-file-after="data/1880_co_after.csv" data-chart-file="data/regions_co2.csv" data-region="Africa" data-year = "1880">Year 1880</div>
         <div class="chart" id="chart-1880"></div>
         <div class="textbox">
-          <!-- maybe add a rotation to the US and to center of europe -->
             <p>Global powers have taken advantage of Africa’s resources for centuries.
             During the late 19th century, the Industrial Revolution fueled global demand 
             for diamonds, rubber, and other minerals, driving intensive mining and plantation 
@@ -117,26 +179,72 @@
             post–World War II period, as economies begin to develop and energy use grows, that 
             Africa’s emissions start to climb more sharply.</p>
         </div>
-    </div>
+    </div> 
+  -->
+  <div class="step-block newspaper-page">
+    <div class="newspaper-sheet">
+      <!-- Masthead -->
+      <header class="np-masthead">
+        <div class="np-masthead-title">THE CARBON CHRONICLE</div>
+        <div class="np-masthead-rule"></div>
+      </header>
 
-    <div class="step-block">
-        <div class="step" id="step-1908" data-globe-file="data/1908_co.csv" data-globe-file-after="data/1908_co_after.csv" data-chart-file="data/regions_co2.csv" data-region="Middle East" data-year = "1908">Year 1908</div>
-        <div class="chart" id="chart-1908"></div>
-        <div class="textbox">
-            <p>In the early 20th century British prospectors discovered oil in Iran and began 
-              the first large-scale drilling projects. The British government bought a 
-              controlling stake in the Anglo-Iranian oil company (AIOC) and by the start of WWI 
-              Iranian oil was Britain’s most important strategic resource. However, this grew 
-              resentment in Iranians as foreign businessmen, engineers, and British investors 
-              hoarded the wealth and lived lavishly while Iran’s local population lived in 
-              poverty. This led to nationalization of Iran’s oil industry by Mohammed Mossadeq – 
-              who was the democratically elected prime minister; he argued that Iran should 
-              begin profiting from its vast oil reserves. However, in 1953 the CIA and British 
-              intelligence orchestrated a coup of this nationalist government for a dictatorship 
-              under the Shah who was friendly and relied heavily on western interests. The CIA 
-              didn’t acknowledge their key involvement until 2013. </p>
+      <!-- Dateline -->
+      <div class="np-dateline-row">
+        <div class="step"
+            id="step-1908"
+            data-globe-file="data/1908_co.csv"
+            data-globe-file-after="data/1908_co_after.csv"
+            data-chart-file="data/regions_co2.csv"
+            data-region="Middle East"
+            data-year="1908">
+          MIDDLE EAST · <span class="np-dateline-year">1908</span>
         </div>
+        <div class="np-dateline-right">Oil, empire, and resentment</div>
+      </div>
+
+      <!-- Headline + subhead -->
+      <div class="np-headline-block">
+        <h2 class="np-headline">Oil beneath Iranian soil, power above it.</h2>
+        <p class="np-subhead">
+          Foreign companies extracted Iran’s oil and profits, while local communities lived in poverty — 
+          setting the stage for nationalization and a global fight over energy.
+        </p>
+      </div>
+
+      <!-- Figure -->
+      <figure class="np-figure">
+        <div class="chart" id="chart-1908"></div>
+        <figcaption class="np-figure-caption">
+          <strong>Fig. 2</strong> — Emissions in the Middle East begin to rise as oil extraction scales up, 
+          even though the wealth and energy use concentrate in foreign hands.
+        </figcaption>
+      </figure>
+
+      <!-- Body -->
+      <div class="np-body">
+        <p class="lead-paragraph">
+          In the early 20th century, British prospectors discovered oil in Iran and began the first
+          large-scale drilling projects. The British government bought a controlling stake in the 
+          Anglo-Iranian Oil Company (AIOC), and by the start of World War&nbsp;I, Iranian oil had become 
+          one of Britain’s most important strategic resources. Yet the profits flowed outward: foreign 
+          businessmen, engineers, and investors lived comfortably while many Iranians remained in poverty.
+          This imbalance fueled resentment and, eventually, the nationalization of Iran’s oil industry 
+          under Prime Minister Mohammad Mossadegh, who argued that Iran should benefit from its own reserves.
+          In 1953, the CIA and British intelligence orchestrated a coup that overthrew this government 
+          and reinstated a monarchy aligned with Western interests — a reminder that control over carbon 
+          resources has always been deeply political.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <footer class="np-footer">
+        <span class="np-footer-left">Page 4</span>
+        <span class="np-footer-right">Middle East · Oil & Empire</span>
+      </footer>
     </div>
+  </div>
+
 <!--
     <div class="step-block">
         <div class="step" id="step-1930" data-globe-file="data/1930_co.csv" data-globe-file-after="data/1930_co_after.csv" data-chart-file="data/regions_co2.csv" data-region="Belgium" data-year = "1930">Year 1930</div>
@@ -146,11 +254,50 @@
         </div>
     </div>
 -->
-    <div class="step-block">
-        <div class="step" id="step-1945" data-globe-file="data/1945_co.csv" data-chart-file="data/regions_co2.csv"data-globe-file-after="data/1945_co_after.csv" data-region="Japan" data-year = "1945">Year 1945</div>
-        <div class="chart" id="chart-1945"></div>
-        <div class="textbox">
-            <p>The atomic bomb on Japan is a unique event in which destruction was brought about not 
+    <div class="step-block newspaper-page">
+      <div class="newspaper-sheet">
+        <!-- Masthead -->
+        <header class="np-masthead">
+          <div class="np-masthead-title">THE CARBON CHRONICLE</div>
+          <div class="np-masthead-rule"></div>
+        </header>
+
+        <!-- Dateline -->
+        <div class="np-dateline-row">
+          <div class="step"
+              id="step-1945"
+              data-globe-file="data/1945_co.csv"
+              data-globe-file-after="data/1945_co_after.csv"
+              data-chart-file="data/regions_co2.csv"
+              data-region="Japan"
+              data-year="1945">
+            JAPAN · <span class="np-dateline-year">1945</span>
+          </div>
+          <div class="np-dateline-right">War, fallout, and the atom age</div>
+        </div>
+
+        <!-- Headline + subhead -->
+        <div class="np-headline-block">
+          <h2 class="np-headline">A new kind of fallout, beyond smoke and ash.</h2>
+          <p class="np-subhead">
+            The bombing of Hiroshima and subsequent nuclear testing altered the atmosphere in ways 
+            our emissions charts can’t fully capture — leaving a radioactive signature on the carbon cycle.
+          </p>
+        </div>
+
+        <!-- Figure -->
+        <figure class="np-figure">
+          <div class="chart" id="chart-1945"></div>
+          <figcaption class="np-figure-caption">
+            <strong>Fig. 3</strong> — Japan’s fossil-fuel CO₂ emissions dip at the end of World War&nbsp;II, 
+            even as nuclear detonations add a different kind of tracer — radiocarbon — to the atmosphere.
+          </figcaption>
+        </figure>
+
+        <!-- Body -->
+        <div class="np-body">
+          <p class="lead-paragraph">
+            The atomic bomb on Japan is a unique event in which destruction was brought about not 
               for resource extraction but for the cessation of war. During WWII Japan was the last 
               nation in the Axis power to surrender. The United States had determined that – due to 
               the resiliency of the Japanese – conventional bombing and ground invasions were not 
@@ -161,15 +308,63 @@
               ratio of 14CO2 to total CO2 rapidly increased during this time. This worldwide public 
               concern over the danger posed by atmospheric radioactive fallout produced by above 
               ground nuclear weapons testing led to the Nuclear Test-Ban Treaty signed by the United 
-              States, Soviet Union, and United Kingdom.</p>
+              States, Soviet Union, and United Kingdom.
+          </p>
         </div>
+
+        <!-- Footer -->
+        <footer class="np-footer">
+          <span class="np-footer-left">Page 5</span>
+          <span class="np-footer-right">Japan · The Nuclear Signature</span>
+        </footer>
+      </div>
     </div>
 
-    <div class="step-block">
-        <div class="step" id="step-1952" data-globe-file="data/1952_co.csv" data-chart-file="data/regions_co2.csv" data-globe-file-after="data/1952_co_after.csv" data-region="United Kingdom" data-year = "1952">Year 1952</div>
-        <div class="chart" id="chart-1952"></div>
-        <div class="textbox">
-            <p>In December 1952, London was engulfed for five days by the Great Smog, 
+
+    <div class="step-block newspaper-page">
+      <div class="newspaper-sheet">
+        <!-- Masthead -->
+        <header class="np-masthead">
+          <div class="np-masthead-title">THE CARBON CHRONICLE</div>
+          <div class="np-masthead-rule"></div>
+        </header>
+
+        <!-- Dateline -->
+        <div class="np-dateline-row">
+          <div class="step"
+              id="step-1952"
+              data-globe-file="data/1952_co.csv"
+              data-globe-file-after="data/1952_co_after.csv"
+              data-chart-file="data/regions_co2.csv"
+              data-region="United Kingdom"
+              data-year="1952">
+            UNITED KINGDOM · <span class="np-dateline-year">1952</span>
+          </div>
+          <div class="np-dateline-right">Smog, law, and unseen carbon</div>
+        </div>
+
+        <!-- Headline + subhead -->
+        <div class="np-headline-block">
+          <h2 class="np-headline">London clears the air — but not the carbon.</h2>
+          <p class="np-subhead">
+            The Great Smog killed thousands and forced the UK to regulate coal. 
+            Local air improved, yet national emissions kept climbing.
+          </p>
+        </div>
+
+        <!-- Figure -->
+        <figure class="np-figure">
+          <div class="chart" id="chart-1952"></div>
+          <figcaption class="np-figure-caption">
+            <strong>Fig. 4</strong> — United Kingdom fossil-fuel CO₂ emissions continue to rise through the 1950s, 
+            even after policies aimed at cleaner urban air take effect.
+          </figcaption>
+        </figure>
+
+        <!-- Body -->
+        <div class="np-body">
+          <p class="lead-paragraph">
+            In December 1952, London was engulfed for five days by the Great Smog, 
               a toxic haze that created a spike in pneumonia and bronchitis cases. The 
               lethal smog was formed by a combination of industrial pollution from coal 
               burning and a period of high pressure weather. It led to an estimated 12,000 
@@ -178,15 +373,63 @@
               which restricted coal burning and helped with the transition to oil, natural gas,
               and electricity. However, if you look at the chart, carbon emissions continue to 
               rise. The smog crisis helped local air pollution but didn't address the overall problem
-              of carbon emmissions.</p>
+              of carbon emmissions.
+          </p>
         </div>
+
+        <!-- Footer -->
+        <footer class="np-footer">
+          <span class="np-footer-left">Page 6</span>
+          <span class="np-footer-right">United Kingdom · The Great Smog</span>
+        </footer>
+      </div>
     </div>
 
-    <div class="step-block">
-        <div class="step" id="step-1955" data-globe-file="data/1955_co.csv" data-chart-file="data/regions_co2.csv" data-globe-file-after="data/1955_co_after.csv" data-region="Vietnam" data-year = "1955">Year 1955</div>
-        <div class="chart" id="chart-20955"></div>
-        <div class="textbox">
-            <p>The vietnam war grew from the long conflicts between France and Vietnam. 
+
+    <div class="step-block newspaper-page">
+  <div class="newspaper-sheet">
+    <!-- Masthead -->
+    <header class="np-masthead">
+      <div class="np-masthead-title">THE CARBON CHRONICLE</div>
+      <div class="np-masthead-rule"></div>
+    </header>
+
+    <!-- Dateline -->
+    <div class="np-dateline-row">
+      <div class="step"
+           id="step-1955"
+           data-globe-file="data/1955_co.csv"
+           data-globe-file-after="data/1955_co_after.csv"
+           data-chart-file="data/regions_co2.csv"
+           data-region="Vietnam"
+           data-year="1955">
+        VIETNAM · <span class="np-dateline-year">1955</span>
+      </div>
+      <div class="np-dateline-right">War in the forests</div>
+    </div>
+
+    <!-- Headline + subhead -->
+    <div class="np-headline-block">
+      <h2 class="np-headline">Carbon lost in a war over land.</h2>
+      <p class="np-subhead">
+        Bombing and chemical defoliants stripped Vietnam’s forests, releasing stored carbon and reshaping 
+        landscapes far beyond the battle lines.
+      </p>
+    </div>
+
+    <!-- Figure -->
+    <figure class="np-figure">
+      <div class="chart" id="chart-1955"></div>
+      <figcaption class="np-figure-caption">
+        <strong>Fig. 5</strong> — Vietnam’s fossil-fuel emissions remain modest, but war-driven land-use change 
+        and forest loss release carbon that does not appear fully in energy statistics.
+      </figcaption>
+    </figure>
+
+    <!-- Body -->
+    <div class="np-body">
+      <p class="lead-paragraph">
+        The Vietnam War grew from the long conflicts between France and Vietnam. 
               The Geneva Peace Accords was an attempt to resolve these conflicts signed by 
               France and the communist leaderships of Vietnam – the Soviet Union and the People’s 
               Republic of China – and stipulated that Vietnam be reunified by a national election. 
@@ -195,9 +438,18 @@
               This conflict pitted the communist North Vietnam against the government of South 
               Vietnam and its principal ally the United States. The deliberate mass removal of 
               vegetation by bombing and chemical defoliants (Agent Orange) sought to eliminate forest 
-              cover and with it the carbon it stored was released.  </p>
-        </div>
+              cover and with it the carbon it stored was released. 
+      </p>
     </div>
+
+    <!-- Footer -->
+    <footer class="np-footer">
+      <span class="np-footer-left">Page 7</span>
+      <span class="np-footer-right">Vietnam · War & Deforestation</span>
+    </footer>
+  </div>
+</div>
+
 <!--
    <div class="step-block"> 
         <div class="step" id="step-2014" data-globe-file="data/2014_co.csv" data-chart-file="data/regions_co2.csv" data-region="Africa" data-year = "2014">Year 2014</div>
@@ -282,7 +534,12 @@
 
   </div>
 </section>
-
+    <svg width="0" height="0" style="position: absolute; pointer-events: none;">
+      <filter id="ink-bleed">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="1" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" />
+      </filter>
+    </svg>
     <script src="script.js"></script>
 </body>
 </html>
