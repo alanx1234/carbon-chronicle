@@ -435,25 +435,20 @@ function initBarChartRace() {
     }
 
     function startRace() {
-      // 1. Reset everything
       currentYearIndex = 0;
       racePanel.classList.remove("race-paused");
 
-      // Clear any existing timers or loops to prevent overlapping animations
       if (raceInterval) raceInterval.stop();
       if (raceStartTimeout) clearTimeout(raceStartTimeout);
 
-      // 2. Render the INITIAL frame (Year 1850) immediately
       year = raceYears[currentYearIndex];
       renderYear(year, raceYearDataByYear.get(year));
       yearLabel.text(year);
 
-      // 3. Wait 1.5 seconds, THEN start the race loop
       raceStartTimeout = setTimeout(() => {
         raceInterval = d3.interval(() => {
-          currentYearIndex += 2; // Keep your existing speed step
+          currentYearIndex += 2; 
 
-          // Check if finished
           if (currentYearIndex >= raceYears.length) {
             currentYearIndex = raceYears.length - 1;
             year = raceYears[currentYearIndex];
@@ -464,12 +459,11 @@ function initBarChartRace() {
             return;
           }
 
-          // Render next frame
           year = raceYears[currentYearIndex];
           renderYear(year, raceYearDataByYear.get(year));
           yearLabel.text(year);
         }, STEP_INTERVAL);
-      }, 1500); // <--- The pause duration (1500ms = 1.5 seconds)
+      }, 150);
     }
 
     if (playButton) {
