@@ -45,6 +45,8 @@ let starsInitialized = false;
 let currentYearMode = "event"; // "event" or "after"
 let currentStepElement = null; 
 
+const DEV_MODE = false;
+
 function resizeSpaceCanvas() {
   spaceWidth = window.innerWidth;
   spaceHeight = window.innerHeight;
@@ -421,6 +423,7 @@ function initBarChartRace() {
     yearLabel.text(year);
 
     let raceInterval = null;
+    let raceStartTimeout = null;
     const racePanel = document.getElementById("race-panel-left");
     const playButton = document.getElementById("race-play-button");
 
@@ -432,31 +435,41 @@ function initBarChartRace() {
     }
 
     function startRace() {
+      // 1. Reset everything
       currentYearIndex = 0;
       racePanel.classList.remove("race-paused");
 
+      // Clear any existing timers or loops to prevent overlapping animations
+      if (raceInterval) raceInterval.stop();
+      if (raceStartTimeout) clearTimeout(raceStartTimeout);
+
+      // 2. Render the INITIAL frame (Year 1850) immediately
       year = raceYears[currentYearIndex];
       renderYear(year, raceYearDataByYear.get(year));
       yearLabel.text(year);
 
-      raceInterval = d3.interval(() => {
-        currentYearIndex += 2;
+      // 3. Wait 1.5 seconds, THEN start the race loop
+      raceStartTimeout = setTimeout(() => {
+        raceInterval = d3.interval(() => {
+          currentYearIndex += 2; // Keep your existing speed step
 
-        if (currentYearIndex >= raceYears.length) {
-          currentYearIndex = raceYears.length - 1;
+          // Check if finished
+          if (currentYearIndex >= raceYears.length) {
+            currentYearIndex = raceYears.length - 1;
+            year = raceYears[currentYearIndex];
+            renderYear(year, raceYearDataByYear.get(year));
+            yearLabel.text(year);
+
+            handleRaceCompletion();
+            return;
+          }
+
+          // Render next frame
           year = raceYears[currentYearIndex];
           renderYear(year, raceYearDataByYear.get(year));
           yearLabel.text(year);
-
-          handleRaceCompletion();
-          return;
-        }
-
-        year = raceYears[currentYearIndex];
-        renderYear(year, raceYearDataByYear.get(year));
-
-        yearLabel.text(year);
-      }, STEP_INTERVAL);
+        }, STEP_INTERVAL);
+      }, 1500); // <--- The pause duration (1500ms = 1.5 seconds)
     }
 
     if (playButton) {
@@ -1630,10 +1643,127 @@ d3.json("data/countries.json").then((world) => {
       lastStepBlock = firstBlock;
     }
   }
+  
+  if (DEV_MODE) {
+    // Pretend we've already done the warp/year scene
+    hasWarped = true;
+    isInStory = true;
+    isWarping = false;
+
+    // Make sure we’re not in cinematic/intro state
+    document.body.classList.remove("scroll-locked");
+    document.body.classList.remove("cinematic-mode");
+
+    if (intro) {
+      intro.classList.add("slide-up"); // hide the big intro card
+    }
+
+    if (scrolly) {
+      scrolly.classList.add("visible");
+    }
+
+    // Activate the first newspaper page + step
+    const firstBlock = document.querySelector(".step-block.newspaper-page");
+    if (firstBlock) {
+      const firstStep = firstBlock.querySelector(".step");
+      if (firstStep) {
+        handleStepEnter(firstStep);
+      }
+
+      // Scroll so the first page sits nicely in view
+      const rect = firstBlock.getBoundingClientRect();
+      const offset = window.innerHeight * 0.2;
+      const targetTop = window.pageYOffset + rect.top - offset;
+
+      window.scrollTo({
+        top: targetTop,
+        behavior: "auto",
+      });
+    }
+
+    // Make sure the globe is sized correctly
+    resizeCanvas();
+    draw();
+  }
 
 });
 const intro = document.querySelector(".intro");
 const scrolly = document.getElementById("scrolly");
+
+// === YEAR SEQUENCE (Steins;Gate-style world-line year gate) ===
+const yearOverlay = document.getElementById("year-sequence-overlay");
+const yearDisplay = document.getElementById("year-sequence-year");
+const yearSubtitle = document.getElementById("year-sequence-subtitle");
+
+function playYearSequence(onComplete) {
+  if (!yearOverlay || !yearDisplay || !yearSubtitle) {
+    if (onComplete) onComplete();
+    return;
+  }
+
+  // Start overlay
+  yearOverlay.classList.remove("fade-out");
+  yearOverlay.classList.add("visible");
+
+  // Initial state: present day
+  yearDisplay.textContent = "2025";
+  yearSubtitle.textContent = "Going back in time...";
+
+  // 0.5s hold on 2025 before any shuffling
+  const PRE_SCRAMBLE_HOLD = 500; // ms to pause on 2025
+  const SCRAMBLE_DURATION = 2000; // ms of random digits
+  const HOLD_FINAL_DURATION = 1300; // ms to hold on 1850
+  const TICK = 60; // how fast digits flicker
+
+  const digits = "0123456789";
+  const startTime = performance.now();
+
+  yearDisplay.classList.add("scrambling");
+
+  const scrambleInterval = setInterval(() => {
+    const elapsed = performance.now() - startTime;
+
+    // Phase 1: hold on 2025
+    if (elapsed < PRE_SCRAMBLE_HOLD) {
+      yearDisplay.textContent = "2025";
+      return;
+    }
+
+    // Phase 2: shuffling digits
+    if (elapsed < PRE_SCRAMBLE_HOLD + SCRAMBLE_DURATION) {
+      let s = "";
+      for (let i = 0; i < 4; i++) {
+        s += digits[Math.floor(Math.random() * 10)];
+      }
+      yearDisplay.textContent = s;
+      return;
+    }
+
+    // Phase 3: lock to 1850 and fade out
+    clearInterval(scrambleInterval);
+    yearDisplay.classList.remove("scrambling");
+
+    // Lock in the target year
+    yearDisplay.textContent = "1850";
+    yearSubtitle.textContent = "The Dawn of the Carbon Age";
+
+    // Hold for a moment, then fade out overlay
+    setTimeout(() => {
+      yearOverlay.classList.add("fade-out");
+
+      if (onComplete) {
+        onComplete();
+      }
+
+      // Remove classes after fade-out completes so we can reuse if needed
+      setTimeout(() => {
+        yearOverlay.classList.remove("visible", "fade-out");
+      }, 700);
+    }, HOLD_FINAL_DURATION);
+  }, TICK);
+}
+
+
 
 function clearWarpTimers() {
   if (warpTimeout) {
@@ -1652,10 +1782,7 @@ function clearWarpTimers() {
 
 function enterStory() {
   if (isInStory || isWarping) return;
-
-  if (hasWarped) {
-    return;
-  }
+  if (hasWarped) return;
 
   isInStory = true;
   isWarping = true;
@@ -1672,8 +1799,8 @@ function enterStory() {
 
   intro.classList.add("slide-up");
 
-  // keep Earth visible through warp + zoom
-  isEarthVisible = true;
+  // keep Earth hidden for warp + black + year gate
+  isEarthVisible = false;
   document.body.classList.add("cinematic-mode");
   draw();
 
@@ -1692,65 +1819,87 @@ function enterStory() {
   starTargetAlpha = 1;
 
   warpTarget = WARP_BURST;
-  const WARP_DURATION = 1300;
-  const DECEL_DURATION = 700;
+
+  // --- TIMING KNOBS ---
+  const WARP_DURATION = 1300; // initial burst
+  const DECEL_DURATION = 800; // delay before we start the glide
+  const GLIDE_BEFORE_FADE = 700; // stars still visible but slower
+  const STAR_FADE_DURATION = 700; // time stars take to fade to 0
+  const POST_FADE_DELAY = 200; // time sitting on black before year gate
   const ZOOM_DURATION = 1200;
 
+  // 1) Burst warp phase
   warpTimeout = setTimeout(() => {
     setTimeout(() => {
       isStoryActive = true;
     }, 200);
 
+    // 2) Decel phase begins
     slowTimeout = setTimeout(() => {
-      warpTarget = 0.05;
-      starTargetAlpha = 0.3;
-
+      // Glide: slower warp, stars still visible
+      warpTarget = 0.08; // small but non-zero so they still move
+      starTargetAlpha = 0.9;
       dotAlpha = 0;
-      isZooming = true;
-
-      const startScale = targetScale * 0.12;
-      const endScale = targetScale * 0.9;
-
-      projection.scale(startScale);
+      isEarthVisible = false;
       draw();
 
-      d3.transition()
-        .duration(ZOOM_DURATION)
-        .ease(d3.easeCubicInOut)
-        .tween("zoom-in", () => {
-          const interpScale = d3.interpolate(startScale, endScale);
-          return (t) => {
-            projection.scale(interpScale(t));
-            draw();
-          };
-        })
-        .on("end", () => {
-          isZooming = false;
-          isEarthVisible = true;
+      // 3) After some glide time, start the fade phase
+      setTimeout(() => {
+        // start fading the stars to 0 alpha while still in "warp" mode
+        warpTarget = 0.02; // almost stopped
+        starTargetAlpha = 0;
+
+        // give them time to visually fade out
+        setTimeout(() => {
+          // now stars should basically be gone → switch to pure black
+          isWarping = false; // renderSpace now just paints solid black
+          isEarthVisible = false;
           draw();
 
-          scrolly.classList.add("visible");
-
-          warpTarget = WARP_IDLE;
+          // short pause on black, then run the year gate
           setTimeout(() => {
-            isWarping = false;
-          }, 400);
+            playYearSequence(() => {
+              // After 2025 → scramble → 1850 finishes, zoom Earth in
+              isZooming = true;
+              isEarthVisible = true;
 
-          starTargetAlpha = 0;
+              const startScale = targetScale * 0.12;
+              const endScale = targetScale * 0.9;
 
-          fadeTimeout = setTimeout(() => {
-            showIntroCards();
-          }, 1200);
-        });
+              projection.scale(startScale);
+              draw();
 
-      setTimeout(() => {
-        if (!document.body.classList.contains("story-intro-active")) {
-          showIntroCards();
-        }
-      }, ZOOM_DURATION + 200);
+              d3.transition()
+                .duration(ZOOM_DURATION)
+                .ease(d3.easeCubicInOut)
+                .tween("zoom-in", () => {
+                  const interpScale = d3.interpolate(startScale, endScale);
+                  return (t) => {
+                    projection.scale(interpScale(t));
+                    draw();
+                  };
+                })
+                .on("end", () => {
+                  isZooming = false;
+                  isEarthVisible = true;
+                  draw();
+
+                  scrolly.classList.add("visible");
+
+                  warpTarget = WARP_IDLE;
+                  starTargetAlpha = 0;
+
+                  showIntroCards();
+                });
+            });
+          }, POST_FADE_DELAY);
+        }, STAR_FADE_DURATION);
+      }, GLIDE_BEFORE_FADE);
     }, DECEL_DURATION);
   }, WARP_DURATION);
 }
+
+
 
 function leaveStory() {
   if (isWarping) return;
@@ -1907,8 +2056,10 @@ if (conclusionBtn && conclusionSection) {
 
 
 
-lockScroll();
-window.scrollTo(0, 0);
+if (!DEV_MODE) {
+  lockScroll();
+  window.scrollTo(0, 0);
+}
 
 // === Conclusion Globe (interactive) ===
 const conclusionCanvas = document.getElementById("globe-conclusion");

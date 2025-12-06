@@ -7,11 +7,25 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson-client@3"></script>
     <script src="https://unpkg.com/scrollama"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="space-bg"></canvas>
+
+    <div id="year-sequence-overlay">
+      <div class="year-sequence-inner">
+        <div class="year-sequence-year" id="year-sequence-year">
+          2025
+        </div>
+
+        <div class="year-sequence-subtitle" id="year-sequence-subtitle">
+          Synchronizing timeline…
+        </div>
+      </div>
+    </div>
 
     <div id="year-toggle" class="year-toggle">
       <button class="year-toggle-option active" data-mode="event">

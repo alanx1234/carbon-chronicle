@@ -1571,3 +1571,156 @@ body.cinematic-mode .year-toggle {
   animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
+
+/* === YEAR SEQUENCE OVERLAY === */
+
+#year-sequence-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* was solid black; now mostly black with a soft center glow */
+  background:
+    radial-gradient(circle at 50% 60%, #020617 0%, #000000 55%, #000000 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 600ms ease;
+}
+
+
+#year-sequence-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#year-sequence-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.year-sequence-inner {
+  position: relative;
+  text-align: center;
+  color: #f9fafb;
+  padding: 2.2rem 3rem;
+}
+
+
+/* digits themselves – amber Nixie glow */
+.year-sequence-year {
+  position: relative;
+  font-family: "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 4.3rem;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  font-weight: 400;
+  color: #fed7aa;
+  text-shadow:
+    0 0 4px rgba(248, 181, 74, 0.9),
+    0 0 10px rgba(248, 181, 74, 0.9),
+    0 0 24px rgba(248, 113, 22, 0.9),
+    0 0 40px rgba(194, 65, 12, 0.9);
+  animation: yearBreath 2.8s ease-in-out infinite;
+}
+
+#year-sequence-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+}
+
+.year-sequence-year.scrambling {
+  /* keep your jitter, but stack it with the breath */
+  animation:
+    yearGlitch 80ms steps(2, end) infinite,
+    yearBreath 2.8s ease-in-out infinite;
+}
+
+@keyframes yearBreath {
+  0%, 100% { text-shadow:
+    0 0 4px rgba(248, 181, 74, 0.7),
+    0 0 10px rgba(248, 181, 74, 0.7),
+    0 0 24px rgba(248, 113, 22, 0.8),
+    0 0 40px rgba(194, 65, 12, 0.8);
+  }
+  50% { text-shadow:
+    0 0 6px rgba(248, 181, 74, 0.9),
+    0 0 16px rgba(248, 181, 74, 0.9),
+    0 0 32px rgba(248, 113, 22, 1),
+    0 0 52px rgba(194, 65, 12, 1);
+  }
+}
+
+@keyframes yearGlitch {
+  0%   { transform: translateX(-1px); }
+  50%  { transform: translateX(1px); }
+  100% { transform: translateX(0); }
+}
+
+.year-sequence-subtitle {
+  margin-top: 2.4rem;
+  font-family: var(--font-secondary, "Work Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 0.82rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-align: center;
+
+  color: #a5b4fc; /* soft indigo, feels sci-fi */
+  opacity: 0;
+  transform: translateY(6px);
+
+  /* smooth fade/slide in */
+  animation: subtitleIn 700ms ease-out 0.2s forwards;
+  white-space: nowrap;
+}
+
+/* tiny line above the caption, to “dock” it to the digits */
+.year-sequence-subtitle::before {
+  content: "";
+  display: block;
+  width: 4rem;
+  height: 1px;
+  margin: 0 auto 0.9rem auto;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(148, 163, 184, 0.7),
+    transparent
+  );
+}
+
+@keyframes subtitleIn {
+  to {
+    opacity: 0.9;
+    transform: translateY(0);
+  }
+}
+
+
+@media (max-width: 900px) {
+  .year-sequence-year {
+    font-size: 3.2rem;
+    letter-spacing: 0.16em;
+    text-indent: 0.16em;
+  }
+
+  .year-sequence-subtitle {
+    font-size: 0.76rem;
+    letter-spacing: 0.18em;
+  }
+}
