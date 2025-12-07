@@ -132,10 +132,15 @@ spaceCtx.fillRect(0, 0, spaceWidth, spaceHeight);
   warpHuePhase += warpFactor * 0.12 * deltaTime;
 
   if (isInStory && !isWarping) {
-    spaceCtx.fillStyle = "rgba(2, 6, 35, 1)";
-    spaceCtx.fillRect(0, 0, spaceWidth, spaceHeight);
-    return;
-  }
+  spaceCtx.fillStyle = "rgba(2, 6, 35, 1)";
+  spaceCtx.fillRect(0, 0, spaceWidth, spaceHeight);
+
+  // keep the loop alive so when we flip back to intro,
+  // stars can start drawing again
+  requestAnimationFrame(renderSpace);
+  return;
+}
+
 
   for (const star of stars) {
     star.x += star.vx * star.speed * warpFactor * deltaTime;
@@ -1923,9 +1928,46 @@ function clearWarpTimers() {
   }
 }
 
+function resetStarfieldForIntro() {
+  // 1) Cancel any warp / fade timers
+  clearWarpTimers();
+
+  // 2) Reset story / warp flags
+  isInStory = false;
+  isWarping = false;
+  isStoryActive = false;
+  hasStartedStory = false;
+  hasWarped = false;
+
+  // 3) Reset warp / star params
+  warpFactor = WARP_IDLE;
+  warpTarget = WARP_IDLE;
+  starGlobalAlpha = 1;
+  starTargetAlpha = 1;
+  warpHuePhase = 0;
+  lastTime = 0;
+
+  // 4) Fresh starfield
+  initStars();
+
+  // 5) Restore intro UI + classes (THIS is what makes stars visible again)
+  document.body.classList.add("cinematic-mode");   // <- important
+  document.body.classList.remove("story-intro-active");
+
+  const introCardsEl = document.getElementById("intro-cards");
+  if (introCardsEl) {
+    introCardsEl.style.display = ""; // show again
+  }
+
+  if (intro) intro.classList.remove("slide-up");
+  if (scrolly) scrolly.classList.remove("visible");
+}
+
+
+
 function enterStory() {
   if (isInStory || isWarping) return;
-  if (hasWarped) return;
+  // if (hasWarped) return;
 
   isInStory = true;
   isWarping = true;
@@ -2042,28 +2084,39 @@ function enterStory() {
   }, WARP_DURATION);
 }
 
-
-
 function leaveStory() {
   if (isWarping) return;
 
-  unlockScroll();
+  // stop any warp timers
   clearWarpTimers();
-  hideIntroCards();
 
-  warpTarget = WARP_IDLE;
+  // story state
+  isInStory = false;
+  isWarping = false;
+  isStoryActive = false;
+
+  // put stars back into "intro" mode
+  warpTarget = WARP_IDLE;   // 0.25
+  warpFactor = WARP_IDLE;
   starTargetAlpha = 1;
   starGlobalAlpha = 1;
-  isEarthVisible = true;
-  isInStory = false;
+  warpHuePhase = 0;
 
+  // UI state
+  hideIntroCards();
   scrolly.classList.remove("visible");
   intro.classList.remove("slide-up");
 
   document.body.classList.remove("cinematic-mode");
+
+  // We’re leaving the story → allow scrolling again here;
+  // the back button will re-lock if needed.
+  unlockScroll();
+
   resizeCanvas();
   draw();
 }
+
 
 const beginBtn = document.getElementById("begin-btn");
 if (beginBtn) {
@@ -2435,3 +2488,30 @@ function initConclusionGlobe() {
 
   conclusionInitialized = true;
 }
+
+const backToIntroBtn = document.getElementById("back-to-intro-btn");
+if (backToIntroBtn) {
+  backToIntroBtn.addEventListener("click", () => {
+    // Collapse race panel + hide proceed
+    document.body.classList.remove("race-expanded", "race-lift");
+
+    const proceedBtnEl = document.getElementById("proceed-btn");
+    if (proceedBtnEl) {
+      proceedBtnEl.classList.remove("visible");
+    }
+
+    // Leave story (globe + UI)
+    leaveStory();
+
+    // Hard reset starfield + story state to intro
+    resetStarfieldForIntro();
+
+    // Put user back at top, and lock scroll like initial load
+    lockScroll();
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  });
+}
+

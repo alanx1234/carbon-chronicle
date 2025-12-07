@@ -564,16 +564,18 @@ body.cinematic-mode #scrolly {
   display: flex;
   align-items: center;   
   justify-content: space-between;
-  pointer-events: none;
+  pointer-events: none;   /* ok here – it's hidden */
   opacity: 0;
   transition: opacity 400ms ease-out;
   z-index: 20;
 }
 
+
 body.cinematic-mode.story-intro-active #intro-cards {
   opacity: 1;
-  pointer-events: none; 
+  pointer-events: auto;   /* <-- CHANGE THIS from none to auto */
 }
+
 
 body.race-lift #race-panel-left {
   --liftY: -18vh;   /* tweak how high the card rises */
@@ -664,12 +666,6 @@ body.race-lift #race-panel-left {
     transform: translateY(0);
   }
 }
-
-
-body.cinematic-mode #intro-cards {
-  pointer-events: none;
-}
-
 
 #race-panel-left {
   position: relative;
@@ -1738,4 +1734,28 @@ body.cinematic-mode .year-toggle {
     font-size: 0.76rem;
     letter-spacing: 0.18em;
   }
+}
+
+/* Back-to-intro button at the top of the bar chart race overlay */
+.intro-back-btn {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  padding-inline: 18px;
+  font-size: 0.75rem;
+}
+
+body.cinematic-mode.story-intro-active #intro-cards .intro-back-btn {
+  pointer-events: auto;
+}
+
+#intro-cards .intro-card,
+#intro-cards .intro-back-btn {
+  pointer-events: auto;
+}
+
+.intro-back-btn.primary-btn:hover {
+  transform: translate(-50%, -1px);  /* keep centered, add slight lift */
 }
