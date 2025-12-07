@@ -47,6 +47,28 @@ let currentStepElement = null;
 
 const DEV_MODE = false;
 
+// === Historical events per region (for annotations) ===
+const REGION_EVENTS = {
+  "Africa": [
+    { year: 1880, label: "Scramble for\nAfrica" },
+    { year: 1991, label: "Sierra Leone civil war\n& the blood diamonds" }
+  ],
+  "Middle East": [
+    { year: 1908, label: "Mass drilling\nof oil" },
+    { year: 1991, label: "Gulf War Kuwaiti\noil fires" }
+  ],
+  "Japan": [
+    { year: 1945, label: "World's first atomic\nbomb dropped on Hiroshima" }
+  ],
+  "United Kingdom": [
+    { year: 1952, label: "Great Smog\nof London" }
+  ],
+  "Vietnam": [
+    { year: 1955, label: "Vietnam War" }
+  ]
+};
+
+
 function resizeSpaceCanvas() {
   spaceWidth = window.innerWidth;
   spaceHeight = window.innerHeight;
@@ -1278,7 +1300,8 @@ function animateGlobeTo(lon, lat, duration = 1600) {
 
 
 
-function drawRegionChart(regionName, chartDiv, data, eventYear) {
+
+function drawRegionChart(regionName, chartDiv, data, eventYearFromStep) {
   // Clear any previous chart in this container
   chartDiv.innerHTML = "";
 
@@ -1288,7 +1311,6 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     value: +d[regionName],
   }));
 
-  // sanity: filter out anything weird
   const cleaned = parsedData.filter(
     (d) => Number.isFinite(d.year) && Number.isFinite(d.value)
   );
@@ -1297,11 +1319,23 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     return;
   }
 
+  // --------- Event metadata ----------
+  const events = REGION_EVENTS[regionName] || (
+    eventYearFromStep ? [{ year: eventYearFromStep, label: null }] : []
+  );
+
+  // Use the *first* event year to split the line before/after
+  const splitYear = events.length ? events[0].year : eventYearFromStep;
+
+  // Palette: neutral pre-event, orange post-event (color-blind-friendly)
+  const preColor  = "#4b5563";  // slate gray
+  const postColor = "#c026d3";  // magenta
+
   // --------- Dimensions ----------
   const containerWidth = chartDiv.clientWidth || 500;
-  const svgHeight = 260;
+  const svgHeight = 280;  // slightly taller than before
 
-  const margin = { top: 24, right: 20, bottom: 36, left: 60 };
+  const margin = { top: 48, right: 24, bottom: 40, left: 64 };
   const width = containerWidth - margin.left - margin.right;
   const height = svgHeight - margin.top - margin.bottom;
 
@@ -1320,9 +1354,11 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     .domain(d3.extent(cleaned, (d) => d.year))
     .range([0, width]);
 
+  const maxVal = d3.max(cleaned, (d) => d.value) * 1.05;
+
   const y = d3
     .scaleLinear()
-    .domain([0, d3.max(cleaned, (d) => d.value) * 1.05])
+    .domain([0, maxVal])
     .nice()
     .range([height, 0]);
 
@@ -1362,7 +1398,7 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     .attr("class", "axis-label")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2)
-    .attr("y", -margin.left + 16)
+    .attr("y", -margin.left + 18)
     .attr("text-anchor", "middle")
     .text("Carbon Emissions (MtC/year)");
 
@@ -1370,52 +1406,104 @@ function drawRegionChart(regionName, chartDiv, data, eventYear) {
     .append("text")
     .attr("class", "axis-label")
     .attr("x", width / 2)
-    .attr("y", height + margin.bottom - 6)
+    .attr("y", height + margin.bottom - 8)
     .attr("text-anchor", "middle")
     .text("Year");
 
-  // --------- Lines ----------
+  // --------- Lines (pre vs post splitYear) ----------
   const line = d3
     .line()
     .x((d) => x(d.year))
     .y((d) => y(d.value))
     .curve(d3.curveMonotoneX);
 
-  const preEvent = cleaned.filter((d) => d.year <= eventYear);
-  const postEvent = cleaned.filter((d) => d.year >= eventYear);
+  const preEvent = cleaned.filter((d) => d.year <= splitYear);
+  const postEvent = cleaned.filter((d) => d.year >= splitYear);
 
-  // "History" line (before event)
+  // Before event
   svg
     .append("path")
     .datum(preEvent)
     .attr("fill", "none")
-    .attr("stroke", "#2c2c2c")
+    .attr("stroke", preColor)
     .attr("stroke-width", 2)
     .attr("d", line);
 
-  // "Future" line (after event)
+  // After event
   svg
     .append("path")
     .datum(postEvent)
     .attr("fill", "none")
-    .attr("stroke", "#b91c1c")
+    .attr("stroke", postColor)
     .attr("stroke-width", 2)
-    .attr("stroke-dasharray", "4,2")
+    .attr("stroke-dasharray", null)
     .attr("d", line);
 
-  // Event dot
-  const eventPoint = cleaned.find((d) => d.year === eventYear);
-  if (eventPoint) {
+  // --------- Event annotations (vertical line + big dot + label) ----------
+  const [xMin, xMax] = x.domain();
+  const midYear = (xMin + xMax) / 2;
+
+  events.forEach((ev, idx) => {
+    // vertical dashed line
     svg
-      .append("circle")
-      .attr("cx", x(eventPoint.year))
-      .attr("cy", y(eventPoint.value))
-      .attr("r", 4)
-      .attr("fill", "#f7f1e1")
-      .attr("stroke", "#2c2c2c")
-      .attr("stroke-width", 2);
-  }
+      .append("line")
+      .attr("x1", x(ev.year))
+      .attr("x2", x(ev.year))
+      .attr("y1", 0)
+      .attr("y2", height)
+      .attr("stroke", postColor)
+      .attr("stroke-width", 1.8)
+      .attr("stroke-dasharray", "4,4")
+      .attr("opacity", 0.9);
+
+    // enlarged circle at data point (if we have that year)
+    const point = cleaned.find((d) => d.year === ev.year);
+    if (point) {
+      svg
+        .append("circle")
+        .attr("cx", x(point.year))
+        .attr("cy", y(point.value))
+        .attr("r", 6)
+        .attr("fill", "#f7f1e1")
+        .attr("stroke", postColor)
+        .attr("stroke-width", 2);
+    }
+
+    // ----- multi-line label with consistent bottom alignment -----
+    if (ev.label) {
+      const anchor = "middle";
+      const baseX = x(ev.year);
+      const lines = ev.label.split("\n");
+
+      const lineHeight = 11;         // vertical spacing between lines
+      const desiredBottomOffset = 4; // px above the top axis (y = 0)
+
+      // We want the *bottom* line’s baseline to sit at -desiredBottomOffset
+      const bottomBaselineY = -desiredBottomOffset;
+
+      // Compute the baseline for the FIRST line so the LAST ends up at bottomBaselineY
+      const firstLineBaselineY =
+        bottomBaselineY - (lines.length - 1) * lineHeight;
+
+      const text = svg
+        .append("text")
+        .attr("class", "event-label")
+        .attr("x", baseX)
+        .attr("y", firstLineBaselineY)
+        .attr("text-anchor", anchor)
+        .attr("alignment-baseline", "alphabetic"); // baseline alignment
+
+      lines.forEach((line, i) => {
+        text
+          .append("tspan")
+          .attr("x", baseX)
+          .attr("dy", i === 0 ? 0 : lineHeight)
+          .text(line);
+      });
+    }
+  });
 }
+
 async function initAllRegionCharts() {
   const steps = document.querySelectorAll(".step[data-chart-file]");
   console.log("[regions] found steps:", steps.length);

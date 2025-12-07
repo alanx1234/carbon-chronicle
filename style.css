@@ -970,6 +970,7 @@ body.race-expanded #race-panel-inner {
   font-size: 0.98rem;
   line-height: 1.8;
   color: var(--text-muted);
+  text-indent: 3em;
 }
 
 .conclusion-cta {
@@ -1177,6 +1178,8 @@ body.cinematic-mode .year-toggle {
   border: none;
   box-shadow: none;
 
+  max-width: 760px;
+
   opacity: 1;
   transform: none;
 }
@@ -1257,7 +1260,7 @@ body.cinematic-mode .year-toggle {
 /* Newspaper chart: make it feel like a printed graphic panel */
 .newspaper-sheet .chart {
   width: 100%;
-  height: 240px;
+  height: 280px;
   margin: 0;
   padding: 10px 12px;
 
@@ -1550,6 +1553,14 @@ body.cinematic-mode .year-toggle {
   fill: #555;
 }
 
+.newspaper-sheet .chart .event-label {
+  font-family: 'Work Sans', sans-serif;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  fill: #111827;
+  opacity: 0.95;
+}
 
 /* Add ink bleed texture to chart lines */
 .newspaper-sheet .chart path {
