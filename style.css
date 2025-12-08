@@ -2000,3 +2000,8 @@ body.intro-mode #intro-cards {
 #globe-conclusion:active {
   cursor: grabbing;
 }
+
+body.cinematic-mode:not(.story-intro-active) #globe,
+body.cinematic-mode:not(.story-intro-active) #globe-conclusion {
+  cursor: default;
+}
