@@ -45,6 +45,65 @@ let starsInitialized = false;
 let currentYearMode = "event"; // "event" or "after"
 let currentStepElement = null; 
 
+
+// === Manual rotation for main globe ===
+let mainGlobeDragging = false;
+let mainGlobeDragStart = null;
+let mainGlobeRotationStart = null;
+let mainGlobeDragRafPending = false;
+
+function scheduleMainGlobeDraw() {
+  if (mainGlobeDragRafPending) return;
+  mainGlobeDragRafPending = true;
+  requestAnimationFrame(() => {
+    mainGlobeDragRafPending = false;
+    draw();
+  });
+}
+
+function beginMainGlobeDrag(clientX, clientY) {
+  if (isWarping || isZooming || !isEarthVisible) return;
+
+  mainGlobeDragging = true;
+  mainGlobeDragStart = [clientX, clientY];
+  mainGlobeRotationStart = projection.rotate();
+
+  // If an auto-rotation tween is running (from scroll), cancel it
+  if (activeRotationTween && activeRotationTween.cancel) {
+    activeRotationTween.cancel = true;
+    activeRotationTween = null;
+  }
+
+  canvas.style.cursor = "grabbing";
+}
+
+function moveMainGlobeDrag(clientX, clientY) {
+  if (!mainGlobeDragging || !mainGlobeRotationStart) return;
+
+  const dx = clientX - mainGlobeDragStart[0];
+  const dy = clientY - mainGlobeDragStart[1];
+
+  const sensitivity = 0.3; // tweak if you want slower/faster spin
+
+  const newRotate = [
+    mainGlobeRotationStart[0] + dx * sensitivity, // yaw
+    mainGlobeRotationStart[1] - dy * sensitivity, // pitch
+    mainGlobeRotationStart[2],                    // keep roll
+  ];
+
+  projection.rotate(newRotate);
+  scheduleMainGlobeDraw();
+}
+
+function endMainGlobeDrag() {
+  if (!mainGlobeDragging) return;
+  mainGlobeDragging = false;
+  mainGlobeDragStart = null;
+  mainGlobeRotationStart = null;
+  canvas.style.cursor = "";
+}
+
+
 const DEV_MODE = false;
 
 // === Historical events per region (for annotations) ===
@@ -714,8 +773,8 @@ function draw() {
 
       const alpha = (0.25 + intensity * 0.75) * dotTransition * w;
 
-      const jitterX = (Math.random() - 0.5) * 1.2;
-      const jitterY = (Math.random() - 0.5) * 1.2;
+      const jitterX = d.jitterX;
+      const jitterY = d.jitterY;
 
       context.beginPath();
       context.arc(x + jitterX, y + jitterY, radius, 0, Math.PI * 2);
@@ -941,14 +1000,15 @@ function updateYear(csvFile) {
     // 3) Only keep points with some visible weight
     let drawSource = yearData.filter((d) => d.weight > 0.01);
 
+    const BIN_SIZE = 1;
     const binnedData = d3.rollup(
       drawSource,
       (v) => ({
         co2: d3.mean(v, (d) => d.co2),
         weight: d3.mean(v, (d) => d.weight),
       }),
-      (d) => Math.round(d.lat),
-      (d) => Math.round(d.lon)
+      (d) => Math.round(d.lat / BIN_SIZE) * BIN_SIZE,
+      (d) => Math.round(d.lon / BIN_SIZE) * BIN_SIZE
     );
 
     plotData = [];
@@ -2499,6 +2559,78 @@ function initConclusionGlobe() {
 
   conclusionInitialized = true;
 }
+
+if (canvas) {
+  // Mouse
+  canvas.addEventListener("mousedown", (e) => {
+    beginMainGlobeDrag(e.clientX, e.clientY);
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!mainGlobeDragging) return;
+    moveMainGlobeDrag(e.clientX, e.clientY);
+  });
+
+  window.addEventListener("mouseup", () => {
+    endMainGlobeDrag();
+  });
+
+  // Touch
+  canvas.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!e.touches || !e.touches.length) return;
+      const t = e.touches[0];
+      beginMainGlobeDrag(t.clientX, t.clientY);
+    },
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!mainGlobeDragging) return;
+      if (!e.touches || !e.touches.length) return;
+      const t = e.touches[0];
+      // prevent the page from scrolling while rotating the globe
+      e.preventDefault();
+      moveMainGlobeDrag(t.clientX, t.clientY);
+    },
+    { passive: false }
+  );
+
+  window.addEventListener("touchend", () => {
+    endMainGlobeDrag();
+  });
+
+  window.addEventListener("touchcancel", () => {
+    endMainGlobeDrag();
+  });
+}
+
+// Allow dragging the globe even when the intro overlay (#intro-cards) is on top
+if (introCards && canvas) {
+  // Mouse: start drag when clicking in the empty space over the globe
+  introCards.addEventListener("mousedown", (e) => {
+    // Don't hijack clicks on the cards or buttons
+    if (e.target.closest(".intro-card") || e.target.closest("button")) return;
+
+    beginMainGlobeDrag(e.clientX, e.clientY);
+  });
+
+  // Touch: same idea for mobile
+  introCards.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.target.closest(".intro-card") || e.target.closest("button")) return;
+      if (!e.touches || !e.touches.length) return;
+      const t = e.touches[0];
+      beginMainGlobeDrag(t.clientX, t.clientY);
+    },
+    { passive: true }
+  );
+}
+
 
 const backToIntroBtn = document.getElementById("back-to-intro-btn");
 if (backToIntroBtn) {

@@ -569,11 +569,13 @@ body.cinematic-mode #scrolly {
   transition: opacity 400ms ease-out;
   z-index: 20;
 }
-
+#intro-cards .intro-card,
+#intro-cards button {
+  pointer-events: auto;
+}
 
 body.cinematic-mode.story-intro-active #intro-cards {
   opacity: 1;
-  pointer-events: auto;   /* <-- CHANGE THIS from none to auto */
 }
 
 
