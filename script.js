@@ -2555,3 +2555,45 @@ if (backToRaceBtn) {
     });
   });
 }
+
+const backToTimelineBtn = document.getElementById("back-to-timeline-btn");
+if (backToTimelineBtn && conclusionSection) {
+  backToTimelineBtn.addEventListener("click", () => {
+    // 1) Hide the conclusion section again
+    conclusionSection.classList.add("hidden-outro");
+
+    // 2) Show the scrolly timeline section
+    const scrollyEl = document.getElementById("scrolly");
+    if (scrollyEl) {
+      scrollyEl.style.display = ""; // revert to CSS (flex)
+    }
+
+    // 3) Make sure cinematic mode is off
+    document.body.classList.remove("cinematic-mode");
+
+    // 4) Scroll to the current active newspaper page (or first one)
+    let targetBlock = document.querySelector(
+      ".step-block.newspaper-page.is-active"
+    );
+    if (!targetBlock) {
+      targetBlock = document.querySelector(".step-block.newspaper-page");
+    }
+
+    if (targetBlock) {
+      const rect = targetBlock.getBoundingClientRect();
+      const offset = window.innerHeight * 0.2;
+      const targetTop = window.pageYOffset + rect.top - offset;
+
+      window.scrollTo({
+        top: targetTop,
+        behavior: "smooth",
+      });
+
+      // Re-activate the step so the globe + toggle state are correct
+      const stepEl = targetBlock.querySelector(".step");
+      if (stepEl && isInStory && !isWarping && !isZooming) {
+        handleStepEnter(stepEl);
+      }
+    }
+  });
+}
