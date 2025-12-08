@@ -89,41 +89,47 @@
 </div>
 
 
-    <div id="intro-cards">
-      <button id="back-to-intro-btn"
-              class="primary-btn intro-back-btn">
-        Back to intro
-      </button>
-      <div id="race-panel-left" class="intro-card intro-card-left">
-        <h2>Who’s emitting the most?</h2>
-        <p class="intro-card-body">
-          Each bar shows the <strong>anthropogenic carbon emissions</strong> for a 
-          region, measured in <strong>megatonnes of carbon per year (MtC/year)</strong>
-        </p>
-        <div id="race-panel-inner">
-          <!-- bar chart race will go here later -->
-        </div>
-        <button id="race-play-button" title="Replay Animation">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      </div>
+<div id="intro-cards">
+  <button id="back-to-intro-btn"
+          class="primary-btn intro-back-btn">
+    Back to intro
+  </button>
 
-      <div id="intro-panel-right" class="intro-card intro-card-right">
-        <h3>A World in the Dark</h3>
-        <p class="intro-card-body">
-          The era of emissions has only just begun. The map remains mostly dark, except for a few industrial pioneers. These are the early sparks of a trend that will define the coming centuries.
-        </p>
-      </div>
-      <div id="intro-cards">
-        <button id="proceed-btn" class="intro-btn">INITIATE TIMELINE</button>
-      </div>
-    </div>
+  <div id="race-panel-left" class="intro-card intro-card-left">
+    <h2>Who’s emitting the most?</h2>
+    <p class="intro-card-body">
+      Each bar shows the <strong>anthropogenic carbon emissions</strong> for a 
+      region, measured in <strong>megatonnes of carbon per year (MtC/year)</strong>
+    </p>
+    <div id="race-panel-inner"></div>
+
+    <button id="race-play-button" title="Replay Animation">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+      </svg>
+    </button>
   </div>
+
+  <div id="intro-panel-right" class="intro-card intro-card-right">
+    <h3>A World in the Dark</h3>
+    <p class="intro-card-body">
+      The era of emissions has only just begun. The map remains mostly dark, except for a few industrial pioneers. These are the early sparks of a trend that will define the coming centuries.
+    </p>
+  </div>
+
+  <!-- ✅ proceed button now shares the same overlay -->
+  <button id="proceed-btn" class="intro-btn">
+    INITIATE TIMELINE
+  </button>
+</div>
+
 
   <!-- You can put steps ANYWHERE below (center, right, stacked, etc.) -->
   <div class="content-area">
+    <button id="back-to-race-btn" class="primary-btn timeline-back-btn">
+      View global race again
+    </button>
+
     <div class="step-block newspaper-page">
       <div class="newspaper-sheet">
         <!-- 1. Masthead -->

@@ -756,7 +756,7 @@ body.race-expanded #race-panel-inner {
   margin-left: 4px; 
 }
 
-.intro-card.race-paused #race-play-button {
+#race-panel-left.race-paused #race-play-button {
   opacity: 1;
   pointer-events: auto;
 }
@@ -1758,4 +1758,21 @@ body.cinematic-mode.story-intro-active #intro-cards .intro-back-btn {
 
 .intro-back-btn.primary-btn:hover {
   transform: translate(-50%, -1px);  /* keep centered, add slight lift */
+}
+
+.timeline-back-btn {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 40;
+}
+
+/* Hide while the cinematic intro / race overlay is up */
+body.cinematic-mode .timeline-back-btn {
+  display: none;
+}
+
+/* Optional: hide in outro if you want */
+.outro .timeline-back-btn {
+  display: none;
 }

@@ -216,6 +216,11 @@ const container = document.querySelector(".left-panel");
 const introCards = document.getElementById("intro-cards");
 
 function showIntroCards() {
+  const introCardsEl = document.getElementById("intro-cards");
+  if (introCardsEl) {
+    introCardsEl.style.display = "flex"; // <-- make sure it's visible again
+  }
+
   document.body.classList.add("cinematic-mode");
   document.body.classList.add("story-intro-active");
 
@@ -223,6 +228,7 @@ function showIntroCards() {
     expandRacePanel();
   }, 800);
 }
+
 
 function hideIntroCards() {
   document.body.classList.remove("story-intro-active");
@@ -1758,21 +1764,26 @@ d3.json("data/countries.json").then((world) => {
       step: ".step-block.newspaper-page",
       offset: 0.5,
     })
-    .onStepEnter(async ({ element, index, direction }) => {
-      if (!isInStory || isWarping || isZooming) {
-        return;
-      }
+      .onStepEnter(async ({ element, index, direction }) => {
+    if (
+      !isInStory ||
+      isWarping ||
+      isZooming ||
+      document.body.classList.contains("cinematic-mode")
+    ) {
+      // If we're in warp / intro / race overlay, ignore step events
+      return;
+    }
 
-      // Trigger page flip animation between last and current blocks
-      triggerPageFlip(lastStepBlock, element, direction || "down");
-      lastStepBlock = element;
+    // Trigger page flip animation between last and current blocks
+    triggerPageFlip(lastStepBlock, element, direction || "down");
+    lastStepBlock = element;
 
-      // Your existing globe / chart handling
-      const stepEl = element.querySelector(".step");
-      if (stepEl) {
-        await handleStepEnter(stepEl);
-      }
-    });
+    const stepEl = element.querySelector(".step");
+    if (stepEl) {
+      await handleStepEnter(stepEl);
+    }
+  });
 
 
   window.addEventListener("resize", () => {
@@ -2515,3 +2526,32 @@ if (backToIntroBtn) {
   });
 }
 
+const backToRaceBtn = document.getElementById("back-to-race-btn");
+if (backToRaceBtn) {
+  backToRaceBtn.addEventListener("click", () => {
+    // Only do this if we’re already in the story and not mid-warp/zoom
+    if (!isInStory || isWarping || isZooming) return;
+
+    // Lock scroll again while the overlay is up
+    lockScroll();
+
+    // Reset race panel state so animations can play nicely
+    document.body.classList.remove("race-expanded", "race-lift");
+
+    // Make sure intro cards are visible again (showIntroCards will also do this)
+    const introCardsEl = document.getElementById("intro-cards");
+    if (introCardsEl) {
+      introCardsEl.style.display = "flex";
+    }
+
+    // Activate cinematic overlay + race panel
+    showIntroCards();
+
+    // Optional: gently recenter on the globe / scrolly top
+    const scrollyTop = scrolly.offsetTop;
+    window.scrollTo({
+      top: scrollyTop,
+      behavior: "smooth",
+    });
+  });
+}
