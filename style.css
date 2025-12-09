@@ -53,8 +53,7 @@ body {
 
   /* 3. Visuals & Spacing */
   background: #f5f7fb;
-  
-  /* Restored original padding: Top 5rem (~80px), Side 3rem, Bottom 4rem (~64px) */
+
   padding: 5rem 3rem 4rem; 
   
   border-radius: 32px;
@@ -419,7 +418,6 @@ body.cinematic-mode .content-area {
   color: #6b7280;
 }
 
-/* Hide legend during hyperspace cinematic intro if you want */
 body.cinematic-mode .globe-legend {
   opacity: 0;
   pointer-events: none;
@@ -480,7 +478,7 @@ body.cinematic-mode .globe-legend {
 
 
 .step-block:not(.ghost-step):first-of-type {
-  margin-top: 30px;  /* tweak as you like */
+  margin-top: 30px; 
 }
 .chart {
   height: 260px;
@@ -753,10 +751,6 @@ body.race-expanded #race-panel-inner {
   opacity: 1;
 }
 
-
-/* style.css */
-
-/* Add this to style the play button */
 #race-play-button {
   position: absolute;
   top: 50%;
@@ -1288,8 +1282,6 @@ body.cinematic-mode .year-toggle {
   color: #6b7280;
 }
 
-
-/* reuse your pill style but make it flatter on paper */
 .newspaper-sheet .step {
   margin: 0;
   padding: 4px 12px;
@@ -1362,7 +1354,6 @@ body.cinematic-mode .year-toggle {
   column-count: 2;
   column-gap: 36px;
 
-  /* add these */
   text-align: justify;
   text-justify: inter-word;
   hyphens: auto;
@@ -1610,7 +1601,6 @@ body.cinematic-mode .year-toggle {
   /* Make it Dark Grey (Ink) instead of pure black */
   fill: #333 !important; 
   
-  /* Make it smaller and uppercase for a "Technical Caption" look */
   font-size: 10px !important; 
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -1668,7 +1658,7 @@ body.cinematic-mode .year-toggle {
   align-items: center;
   justify-content: center;
 
-  /* was solid black; now mostly black with a soft center glow */
+  /* mostly black with a soft center glow */
   background:
     radial-gradient(circle at 50% 60%, #020617 0%, #000000 55%, #000000 100%);
   opacity: 0;
@@ -1731,7 +1721,6 @@ body.cinematic-mode .year-toggle {
 }
 
 .year-sequence-year.scrambling {
-  /* keep your jitter, but stack it with the breath */
   animation:
     yearGlitch 80ms steps(2, end) infinite,
     yearBreath 2.8s ease-in-out infinite;
@@ -1847,7 +1836,6 @@ body.cinematic-mode .timeline-back-btn {
   display: none;
 }
 
-/* Optional: hide in outro if you want */
 .outro .timeline-back-btn {
   display: none;
 }
@@ -1971,13 +1959,13 @@ body.intro-mode #intro-cards {
   font-size: 3.5rem;
   line-height: 0.85;
   font-weight: 700;
-  color: var(--accent-main);        /* Uses your Teal color */
+  color: var(--accent-main);  
   margin-right: 0.5rem;
   margin-top: 0.2rem;
 }
 
 ::selection {
-  background: var(--accent-soft); /* Your Teal */
+  background: var(--accent-soft);
   color: #ffffff;
   text-shadow: none;
 }

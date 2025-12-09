@@ -799,8 +799,7 @@ function draw() {
       const y = coords[1];
       const dx = x - cx;
       const dy = y - cy;
-
-      // Keep your existing "inside the disc" check
+      
       if (dx * dx + dy * dy > r * r) return;
 
       const intensity = Math.min(1, d.co2 / maxVal);
@@ -1016,49 +1015,6 @@ let colorScale = d3
   .clamp(true);
 
 function regionWeight(p) {
-  // // Outside story view, just draw everything fully
-  // if (!isInStory || focusLon == null || focusLat == null) return 1;
-
-  // // 1) Hard mask by rough region bounds if we have them
-  // if (currentStepElement) {
-  //   const mask = regionMaskByStep[currentStepElement.id];
-  //   if (mask) {
-  //     if (
-  //       p.lat < mask.latMin ||
-  //       p.lat > mask.latMax ||
-  //       p.lon < mask.lonMin ||
-  //       p.lon > mask.lonMax
-  //     ) {
-  //       return 0; // completely ignore this grid cell
-  //     }
-  //   }
-  // }
-
-  // // 2) Soft radial falloff inside that mask
-  // let radius = 38;
-  // if (currentStepElement && regionRadiusByStep[currentStepElement.id]) {
-  //   radius = regionRadiusByStep[currentStepElement.id];
-  // }
-
-  // const dLat = p.lat - focusLat;
-
-  // let dLon = p.lon - focusLon;
-  // if (dLon > 180) dLon -= 360;
-  // if (dLon < -180) dLon += 360;
-
-  // const latRad = (focusLat * Math.PI) / 180;
-  // const lonScale = Math.cos(latRad || 0);
-
-  // const dist = Math.sqrt(dLat * dLat + dLon * lonScale * (dLon * lonScale));
-
-  // const inner = radius * 0.75;
-  // const outer = radius * 1.15;
-
-  // if (dist <= inner) return 1;
-  // if (dist >= outer) return 0;
-
-  // const t = (dist - inner) / (outer - inner);
-  // return Math.max(0, 1 - t);
   return 1;
 }
 
@@ -1085,7 +1041,6 @@ function updateYear(csvFile) {
       // Use the shared domain for this step (event +10y)
       colorScale.domain(fixedDomain);
     } else {
-      // Old behavior: compute from this year's regional data
       let scaleSample = yearData.filter((d) => d.co2 > 0 && d.weight > 0.2);
 
       if (!scaleSample.length) {
@@ -1707,7 +1662,6 @@ async function initAllRegionCharts() {
     }
 
     // DEBUG: force chartFile if needed
-    // If your file is actually at the root, uncomment this line:
     // chartFile = "regions_co2.csv";
 
     // Load + cache the CSV
@@ -2819,8 +2773,6 @@ function initConclusionGlobe() {
     // Initial load
     loadConclusionYear(defaultYear);
   }
-
-  // ... (keep your existing drag-to-rotate logic below) ...
   conclusionCanvas.addEventListener("mousedown", (e) => {
     conclusionDragging = true;
     dragStart = [e.clientX, e.clientY];
