@@ -2005,3 +2005,36 @@ body.cinematic-mode:not(.story-intro-active) #globe,
 body.cinematic-mode:not(.story-intro-active) #globe-conclusion {
   cursor: default;
 }
+
+.intro-header {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;           
+  margin-bottom: 1.5rem;          
+}
+
+.intro-label {
+  margin-bottom: 0;
+}
+
+.demo-link {
+  font-family: var(--font-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: var(--accent-main);
+  text-decoration: none;
+  
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.demo-link:hover {
+  opacity: 0.8;
+  transform: translateX(2px); 
+}
+
