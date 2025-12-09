@@ -2026,3 +2026,40 @@ body.cinematic-mode:not(.story-intro-active) #globe-conclusion {
   transform: translateX(2px); 
 }
 
+#race-panel-inner .bar {
+  rx: 6px;               /* extra rounding on corners */
+  ry: 6px;
+  fill-opacity: 0.95;
+  stroke: rgba(15, 23, 42, 0.08);
+  stroke-width: 1;
+  /* subtle glow so bars feel elevated on the panel */
+  filter: drop-shadow(0 3px 8px rgba(15, 23, 42, 0.18));
+}
+
+#race-panel-inner .name-label {
+  font-family: var(--font-secondary);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: #6b7280; 
+}
+
+#race-panel-inner .value-label {
+  font-family: var(--font-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  fill: #0f172a; 
+}
+
+#race-panel-inner .race-x-axis path,
+#race-panel-inner .race-x-axis line {
+  stroke: rgba(148, 163, 184, 0.6);
+}
+
+#race-panel-inner .race-x-axis text {
+  font-family: var(--font-secondary);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: #9ca3af;
+}
